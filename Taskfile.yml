@@ -1,0 +1,17 @@
+version: '3'
+
+vars:
+  APP: student-service-backend
+
+tasks:
+  run:
+    cmds:
+      - PORT={{.PORT | default "8080"}} go run ./cmd/api
+
+  build:
+    cmds:
+      - CGO_ENABLED=0 go build -o bin/{{.APP}} ./cmd/api
+
+  test:
+    cmds:
+      - go test ./...
