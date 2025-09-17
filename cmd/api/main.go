@@ -55,5 +55,3 @@ func cors() gin.HandlerFunc {
 		c.Next()
 	}
 }
-
-//fsj到此一游（试试git
