@@ -7,3 +7,4 @@ dist/
 config.yaml
 .env.staging
 .env.dev
+tmp
