@@ -1,0 +1,11 @@
+server:
+  # "debug"、"release" 或 "test"
+  mode: debug
+  # 监听的端口
+  port: "8080"
+
+cors:
+  allowed_origins: ["*"]
+  allowed_methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+  allowed_headers: ["Authorization", "Content-Type", "X-Requested-With"]
+  allow_credentials: true
