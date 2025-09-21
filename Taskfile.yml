@@ -15,3 +15,23 @@ tasks:
   test:
     cmds:
       - go test ./...
+
+  docker:up:
+    desc: 启动测试服（构建镜像并后台运行）
+    cmds:
+      - docker compose -f docker-compose.staging.yml --env-file .env.staging up -d --build
+
+  docker:down:
+    desc: 停止测试服（保留数据库卷）
+    cmds:
+      - docker compose -f docker-compose.staging.yml --env-file .env.staging down
+
+  docker:logs:
+    desc: 查看 API 日志
+    cmds:
+      - docker compose -f docker-compose.staging.yml --env-file .env.staging logs -f api
+
+  docker:ps:
+    desc: 查看容器状态
+    cmds:
+      - docker compose -f docker-compose.staging.yml --env-file .env.staging ps
