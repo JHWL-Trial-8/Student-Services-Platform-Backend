@@ -9,12 +9,13 @@ import (
 
     "student-services-platform-backend/internal/config"
     httpmw "student-services-platform-backend/internal/http"
+    dbpkg "student-services-platform-backend/internal/db"
 )
 
 func main() {
     cfg := config.MustLoad()
 
-    // 从配置中获取Gin模式
+    // 根据配置设置 Gin 模式
     switch cfg.Server.Mode {
     case gin.ReleaseMode:
         gin.SetMode(gin.ReleaseMode)
@@ -22,6 +23,17 @@ func main() {
         gin.SetMode(gin.TestMode)
     default:
         gin.SetMode(gin.DebugMode)
+    }
+
+    // 初始化数据库
+    database := dbpkg.MustOpen(cfg.Database)
+    if err := dbpkg.AutoMigrate(database); err != nil {
+        log.Fatalf("db: 自动迁移失败: %v", err)
+    }
+    // 关闭底层连接池
+    sqlDB, err := database.DB()
+    if err == nil {
+        defer sqlDB.Close()
     }
 
     r := gin.New()

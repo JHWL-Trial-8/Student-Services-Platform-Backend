@@ -3,15 +3,13 @@ package config
 import (
     "log"
     "strings"
-    "time"
-
     "github.com/spf13/viper"
 )
 
 type ServerConfig struct {
-    // 例如："8080"
+    // "8080"
     Port string `mapstructure:"port"`
-    // 例如："debug" | "release" | "test"
+    // "debug" | "release" | "test"
     Mode string `mapstructure:"mode"`
 }
 
@@ -23,9 +21,26 @@ type CORSConfig struct {
     AllowCredentials bool   `mapstructure:"allow_credentials"`
 }
 
+// 数据库配置
+type DatabaseConfig struct {
+    // driver: postgres | mysql | sqlite
+    Driver string `mapstructure:"driver"`
+    // DSN
+    DSN string `mapstructure:"dsn"`
+
+    // 连接池
+    MaxOpenConns    int    `mapstructure:"max_open_conns"`
+    MaxIdleConns    int    `mapstructure:"max_idle_conns"`
+    ConnMaxLifetime string `mapstructure:"conn_max_lifetime"` // 例如 "30m", "1h"
+
+    // GORM 日志级别: silent | error | warn | info
+    LogLevel string `mapstructure:"log_level"`
+}
+
 type Config struct {
-    Server ServerConfig `mapstructure:"server"`
-    CORS   CORSConfig   `mapstructure:"cors"`
+    Server   ServerConfig   `mapstructure:"server"`
+    CORS     CORSConfig     `mapstructure:"cors"`
+    Database DatabaseConfig `mapstructure:"database"`
 }
 
 func defaults(v *viper.Viper) {
@@ -36,6 +51,13 @@ func defaults(v *viper.Viper) {
     v.SetDefault("cors.allowed_methods", []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"})
     v.SetDefault("cors.allowed_headers", []string{"Authorization", "Content-Type", "X-Requested-With"})
     v.SetDefault("cors.allow_credentials", true)
+
+    v.SetDefault("database.driver", "postgres")
+    v.SetDefault("database.dsn", "postgres://postgres:postgres@localhost:5432/ssp?sslmode=disable")
+    v.SetDefault("database.max_open_conns", 25)
+    v.SetDefault("database.max_idle_conns", 5)
+    v.SetDefault("database.conn_max_lifetime", "30m")
+    v.SetDefault("database.log_level", "warn")
 }
 
 // Load 从以下位置返回一个配置（按优先级顺序）：
