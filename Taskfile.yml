@@ -35,3 +35,28 @@ tasks:
     desc: 查看容器状态
     cmds:
       - docker compose -f docker-compose.staging.yml --env-file .env.staging ps
+
+  air:up:
+    desc: 启动 Air 开发服（构建镜像并后台运行）
+    cmds:
+      - docker compose -f docker-compose.dev.yml --env-file .env.dev up -d --build
+
+  air:down:
+    desc: 停止 Air 开发服（保留数据库卷）
+    cmds:
+      - docker compose -f docker-compose.dev.yml --env-file .env.dev down
+
+  air:logs:
+    desc: 查看 API 日志
+    cmds:
+      - docker compose -f docker-compose.dev.yml --env-file .env.dev logs -f api
+
+  air:ps:
+    desc: 查看容器状态
+    cmds:
+      - docker compose -f docker-compose.dev.yml --env-file .env.dev ps
+
+  air:purge:
+    desc: 停止 Air 开发服并彻底删除所有卷（清空数据库）
+    cmds:
+      - docker compose -f docker-compose.dev.yml --env-file .env.dev down --volumes

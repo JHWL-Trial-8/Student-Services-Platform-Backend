@@ -1,0 +1,22 @@
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+Dockerfile.dev
+docker-compose.yml
+docker-compose.staging.yml
+docker-compose.dev.yml
+.dockerignore
+
+# IDE & OS files
+.idea
+.vscode
+*.DS_Store
+
+# Go build artifacts & temp files
+bin/
+tmp/
+vendor/
+build-errors.log

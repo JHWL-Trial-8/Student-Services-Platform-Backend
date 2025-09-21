@@ -6,3 +6,4 @@ dist/
 .DS_Store
 config.yaml
 .env.staging
+.env.dev
