@@ -31,16 +31,17 @@ const (
 
 // User 表：用户基础信息
 type User struct {
-    ID         uint      `gorm:"primaryKey"`
-    Email      string    `gorm:"type:varchar(255);uniqueIndex;not null;comment:邮箱"`
-    Name       string    `gorm:"type:varchar(255);not null;comment:姓名"`
-    Role       Role      `gorm:"type:varchar(20);index;not null;comment:角色"`
-    Phone      *string   `gorm:"type:varchar(50)"`
-    Dept       *string   `gorm:"type:varchar(100)"`
-    IsActive   bool      `gorm:"not null;default:true"`
-    AllowEmail bool      `gorm:"not null;default:true;comment:允许邮件提醒"`
-    CreatedAt  time.Time
-    UpdatedAt  time.Time
+    ID           uint      `gorm:"primaryKey"`
+    Email        string    `gorm:"type:varchar(255);uniqueIndex;not null;comment:邮箱"`
+    Name         string    `gorm:"type:varchar(255);not null;comment:姓名"`
+    Role         Role      `gorm:"type:varchar(20);index;not null;comment:角色"`
+    Phone        *string   `gorm:"type:varchar(50)"`
+    Dept         *string   `gorm:"type:varchar(100)"`
+    IsActive     bool      `gorm:"not null;default:true"`
+    AllowEmail   bool      `gorm:"not null;default:true;comment:允许邮件提醒"`
+    PasswordHash string    `gorm:"type:char(60);not null;comment:密码哈希"`
+    CreatedAt    time.Time
+    UpdatedAt    time.Time
 }
 
 func (User) TableName() string { return "users" }

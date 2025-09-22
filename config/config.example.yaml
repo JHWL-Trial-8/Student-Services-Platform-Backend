@@ -18,4 +18,10 @@ database:
   max_idle_conns: 5
   conn_max_lifetime: "30m"
   # GORM 日志级别: silent | error | warn | info
-  log_level: "warn" 
+  log_level: "warn"
+
+jwt:
+  secret_key: "change-me-in-env"
+  access_token_exp: "1h"
+  issuer: "ssp"
+  audience: "ssp-web"

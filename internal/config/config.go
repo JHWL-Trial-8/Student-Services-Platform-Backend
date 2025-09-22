@@ -38,10 +38,18 @@ type DatabaseConfig struct {
 	LogLevel string `mapstructure:"log_level"`
 }
 
+type JWTConfig struct {
+	SecretKey      string `mapstructure:"secret_key"`
+	AccessTokenExp string `mapstructure:"access_token_exp"` // e.g. "1h"
+	Issuer         string `mapstructure:"issuer"`
+	Audience       string `mapstructure:"audience"`
+}
+
 type Config struct {
 	Server   ServerConfig   `mapstructure:"server"`
 	CORS     CORSConfig     `mapstructure:"cors"`
 	Database DatabaseConfig `mapstructure:"database"`
+	JWT      JWTConfig      `mapstructure:"jwt"`
 }
 
 func defaults(v *viper.Viper) {
@@ -59,6 +67,11 @@ func defaults(v *viper.Viper) {
 	v.SetDefault("database.max_idle_conns", 5)
 	v.SetDefault("database.conn_max_lifetime", "30m")
 	v.SetDefault("database.log_level", "warn")
+
+	v.SetDefault("jwt.secret_key", "")
+	v.SetDefault("jwt.access_token_exp", "1h")
+	v.SetDefault("jwt.issuer", "ssp")
+	v.SetDefault("jwt.audience", "ssp-web")
 }
 
 // Load 从以下位置返回一个配置（按优先级顺序）：
