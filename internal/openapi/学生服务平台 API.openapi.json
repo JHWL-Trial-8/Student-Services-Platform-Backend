@@ -109,6 +109,52 @@
         "security": []
       }
     },
+    "/auth/register": {
+      "post": {
+        "summary": "用户注册（创建账户并返回用户信息）",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthRegisterPostRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "已创建",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "请求不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
     "/users/me": {
       "get": {
         "summary": "获取当前用户资料",
@@ -1900,6 +1946,13 @@
           }
         }
       },
+      "AuthRegisterPostRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/UserCreate"
+          }
+        ]
+      },
       "UserUpdate": {
         "type": "object",
         "required": [
@@ -1958,6 +2011,35 @@
             "type": "integer"
           },
           "total": {
+            "type": "integer"
+          }
+        }
+      },
+      "Image": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "mime": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "width": {
+            "type": "integer"
+          },
+          "height": {
+            "type": "integer"
+          },
+          "object_key": {
+            "type": "string"
+          },
+          "ref_count": {
             "type": "integer"
           }
         }
@@ -2259,6 +2341,35 @@
           },
           "comment": {
             "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AuditLog": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "actor_user_id": {
+            "type": "integer"
+          },
+          "action": {
+            "type": "string"
+          },
+          "entity": {
+            "type": "string"
+          },
+          "entity_id": {
+            "type": "integer"
+          },
+          "diff": {
+            "type": "object",
+            "description": "变更快照（JSON）",
+            "properties": {}
           },
           "created_at": {
             "type": "string",
