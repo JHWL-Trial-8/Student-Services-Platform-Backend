@@ -61,7 +61,7 @@ func (as *AuthService) Login(email, password string) (*openapi.AuthLoginPost200R
 		return nil, fmt.Errorf("查询用户失败: %w", err)
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte( /*password*/ ), []byte(password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(dbUser.PasswordHash), []byte(password)); err != nil {
 		return nil, &ErrInvalidPassword{Email: email}
 	}
 
