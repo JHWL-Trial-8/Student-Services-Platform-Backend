@@ -1,51 +1,61 @@
-version: "3.9"
-
 services:
-  # API 开发服务 (Go + Air)
   api:
+    container_name: api-dev
     build:
       context: .
-      dockerfile: Dockerfile.dev
-    container_name: ssp-api-dev
-    ports:
-      - "8080:8080"
-    volumes:
-      # 将本地代码实时同步到容器中
-      - .:/app
+      target: dev
+      args:
+        # 可在 .env.dev 配置；无配置则用默认值
+        ALPINE_MIRROR: ${ALPINE_MIRROR:-https://dl-cdn.alpinelinux.org}
+        GOPROXY: ${GOPROXY:-https://proxy.golang.org,direct}
+        USE_CGO: ${USE_CGO:-0}
+    env_file:
+      - .env.dev
     environment:
-      # 从 .env 文件读取配置，并传递给 Go 应用
-      - SSP_SERVER_MODE=debug
-      - SSP_SERVER_PORT=8080
-      - SSP_DATABASE_DSN=postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable
-      - SSP_JWT_SECRET_KEY=dev-secret
-      - SSP_JWT_ACCESS_TOKEN_EXP=1h
-      - SSP_JWT_ISSUER=ssp
-      - SSP_JWT_AUDIENCE=ssp-web
-      - GIN_MODE=debug
+      # 容器内监听端口（建议与 API_PORT 相同）
+      SSP_SERVER_PORT: ${SSP_SERVER_PORT:-8080}
+    working_dir: /app
+    command: ["air"]
+    volumes:
+      # 代码热重载
+      - ./:/app
+      # 持久化 Go 构建/模块缓存，加速二次编译
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+    ports:
+      # 主机:容器 端口映射；两个变量通常一致
+      - "${API_PORT:-8080}:${SSP_SERVER_PORT:-8080}"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:${SSP_SERVER_PORT:-8080}/api/v1/healthz >/dev/null"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    # 如需数据库，取消下一行注释并启用 db 服务
     depends_on:
-      - db
-    networks:
-      - ssp-dev-net
+      db:
+        condition: service_healthy
 
-  # 数据库服务
   db:
     image: postgres:16-alpine
-    container_name: ssp-db-dev
+    container_name: postgres-dev
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
-    ports:
-      # 映射到 127.0.0.1，方便本地 GUI 工具连接，且更安全
-      - "127.0.0.1:5432:5432"
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-student_service}
     volumes:
-      # 持久化数据库数据
-      - ssp_dev_pgdata:/var/lib/postgresql/data
-    networks:
-      - ssp-dev-net
-
-networks:
-  ssp-dev-net:
+      - pgdata-dev:/var/lib/postgresql/data
+    ports:
+      - "${PG_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-student_service}"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
 
 volumes:
-  ssp_dev_pgdata:
+  go-mod-cache:
+  go-build-cache:
+  pgdata-dev:

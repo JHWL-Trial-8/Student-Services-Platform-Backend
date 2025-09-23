@@ -3,6 +3,11 @@ version: '3'
 vars:
   APP: student-service-backend
 
+env:
+  # 加速 Docker 构建
+  DOCKER_BUILDKIT: "1"
+  COMPOSE_DOCKER_CLI_BUILD: "1"
+
 tasks:
   run:
     cmds:
