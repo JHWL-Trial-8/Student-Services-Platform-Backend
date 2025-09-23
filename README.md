@@ -1,131 +1,143 @@
 # Student Services Platform - Backend
 
-本项目是学生服务平台的 Go 语言后端，使用 Gin 框架和 GORM。
+本项目是学生服务平台的 Go 语言后端，使用 Gin 和 GORM 构建。
 
-## 核心技术栈
-
-- **语言**: Go
-- **Web 框架**: [Gin](https://gin-gonic.com/)
-- **ORM**: [GORM](https://gorm.io/)
-- **数据库**: PostgreSQL
-- **配置管理**: [Viper](https://github.com/spf13/viper)
-- **开发工具**:
-  - [Air](https://github.com/cosmtrek/air) (用于本地开发热重载)
-  - [Taskfile](https://taskfile.dev/) (用于简化命令行任务)
-- **部署**: Docker & Docker Compose
+-   **语言**: Go
+-   **框架**: Gin
+-   **ORM**: GORM
+-   **数据库**: PostgreSQL
+-   **部署**: Docker
 
 ---
 
-## 🚀 快速开始 (本地开发)
+## 🐳 Docker 部署 (测试环境)
 
-### 1. 环境准备
+1.  **创建配置文件**:
+    > **注意**: 这些文件不应提交到 Git。
 
-确保你已经安装了以下工具：
+`.env.staging`
 
-- **Go** (版本 1.21+)
-- **Docker** & **Docker Compose**
-- **Taskfile**: `go install github.com/go-task/task/v3/cmd/task@latest`
-- **Air**: `go install github.com/cosmtrek/air@latest`
+    ```dotenv
+    # .env.staging
+    POSTGRES_PASSWORD=YourStrongPasswordHere
+    JWT_SECRET=YourJWTSECRETHere
+    POSTGRES_USER=postgres
+    POSTGRES_PASSWORD=JHWL2025-8
+    POSTGRES_DB=ssp
+    SSP_DATABASE_DSN="postgres://postgres:YourStrongPasswordHere@db:5432/ssp?sslmode=disable"
+    ALPINE_MIRROR=https://mirrors.tuna.tsinghua.edu.cn
+    ```
 
-### 2. 项目配置
+`.env.dev`
 
-项目配置通过 `config/config.yaml` 和环境变量加载。
+    ```dotenv
+    # .env.dev
+    # Local Development Database Config
+    POSTGRES_USER=postgres
+    POSTGRES_PASSWORD=YourStrongPasswordHere
+    POSTGRES_DB=ssp
+    JWT_SECRET=YourStrongPasswordHere
+    ALPINE_MIRROR=https://mirrors.tuna.tsinghua.edu.cn
+    ```
 
-- 复制示例配置文件：
-  ```bash
-  cp config/config.example.yaml config/config.yaml
-  ```
-- **默认配置已为你设置好本地开发环境**，它会尝试连接本地 `localhost:5432` 的 PostgreSQL 数据库。
+`config.yaml` (not applicable in the staging environment)
 
-### 3. 启动本地数据库
+2.  **使用 Taskfile 管理服务**:
 
-为了方便开发，我们使用 Docker 启动一个 PostgreSQL 实例。
+## 任务列表 (tasks)
 
-```bash
-docker run --name ssp-db-local -e POSTGRES_DB=ssp -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 127.0.0.1:5432:5432 -d postgres:16-alpine
-```
+### 测试环境管理 (Staging)
 
-- 这个命令创建的数据库连接信息与 `config/config.yaml` 中的默认值完全匹配。
-- 当你不需要时，可以停止并移除它：`docker stop ssp-db-local && docker rm ssp-db-local`
+这组命令使用 `docker-compose.staging.yml` 和 `.env.staging` 文件来管理测试环境。
 
-### 4. 运行应用
+#### `docker:up`
 
-在项目根目录执行：
+> 启动测试服（构建镜像并后台运行）
 
-```bash
-air
-```
-Air 会监控 `*.go` 文件的变动，自动重新编译和运行你的应用。服务将启动在 `http://localhost:8080`。
+-   **运行命令**: `task docker:up`
+-   **执行内容**: `docker compose -f docker-compose.staging.yml --env-file .env.staging up -d --build`
+-   **说明**: 强制重新构建镜像，并在后台（`-d`）启动所有服务。
 
-> **备选方案**: 你也可以使用 `Taskfile` 来启动，但这不会有热重载功能。
-> ```bash
-> task run
-> ```
+#### `docker:down`
 
----
+> 停止测试服（保留数据库卷）
 
-## 🐳 Docker 部署 (测试/Staging 环境)
+-   **运行命令**: `task docker:down`
+-   **执行内容**: `docker compose -f docker-compose.staging.yml --env-file .env.staging down`
+-   **说明**: 停止并移除所有容器，但保留与数据库等相关的卷（Volume），以便下次启动时数据不丢失。
 
-我们使用 `docker-compose.staging.yml` 来管理测试服务器的部署。
+#### `docker:logs`
 
-### 1. 部署配置
+> 查看 API 日志
 
-部署配置通过 `.env.staging` 文件注入。**这个文件不应提交到 Git**。
+-   **运行命令**: `task docker:logs`
+-   **执行内容**: `docker compose -f docker-compose.staging.yml --env-file .env.staging logs -f api`
+-   **说明**: 实时跟踪（`-f`）并显示名为 `api` 服务的日志输出。
 
-- 在服务器的项目根目录下，创建一个 `.env.staging` 文件，内容如下：
-  ```dotenv
-  # 设置一个强密码
-  POSTGRES_PASSWORD=YourStrongPasswordHere
-  ```
+#### `docker:ps`
 
-### 2. 管理服务
+> 查看容器状态
 
-我们已经在 `Taskfile.yml` 中集成了常用的 Docker Compose 命令。
+-   **运行命令**: `task docker:ps`
+-   **执行内容**: `docker compose -f docker-compose.staging.yml --env-file .env.staging ps`
+-   **说明**: 列出当前测试环境下所有容器的运行状态。
 
-- **构建并启动服务 (后台模式)**:
-  ```bash
-  task docker:up
-  ```
-- **停止服务 (会保留数据库数据)**:
-  ```bash
-  task docker:down
-  ```
-- **查看 API 服务日志**:
-  ```bash
-  task docker:logs
-  ```
-- **查看容器运行状态**:
-  ```bash
-  task docker:ps
-  ```
+#### `docker:purge`
+
+> 停止测试服并彻底删除所有卷（清空数据库）
+
+-   **运行命令**: `task docker:purge`
+-   **执行内容**: `docker compose -f docker-compose.staging.yml --env-file .env.staging down --volumes`
+-   **说明**: 彻底清理测试环境，不仅停止并移除容器，还会删除所有关联的卷（`--volumes`），**此操作会导致数据库等持久化数据被清空**。
 
 ---
 
-## 📚 API 与数据库
+### 开发环境管理 (Development with Air)
 
-### API 文档
+这组命令使用 `docker-compose.dev.yml` 和 `.env.dev` 文件来管理开发环境，通常集成了 [Air](https://github.com/cosmtrek/air) 工具以实现代码热重载。
 
-本项目的 API 遵循 OpenAPI 3.0 规范，定义文件位于：
-`internal/openapi/学生服务平台 API.openapi.json`
+#### `air:up`
 
-- **推荐查看方式**:
-  - 将文件内容粘贴到 [Swagger Editor](https://editor.swagger.io/)。
-  - 使用 Postman 或 Insomnia 等工具导入该文件来调试 API。
+> 启动 Air 开发服（构建镜像并后台运行）
 
-### 数据库 Schema
+-   **运行命令**: `task air:up`
+-   **执行内容**: `docker compose -f docker-compose.dev.yml --env-file .env.dev up -d --build`
+-   **说明**: 启动开发环境，当代码文件发生变化时，服务会自动重新编译和运行。
 
-- **代码即文档**: 数据库的表结构由 GORM 模型定义，是唯一的事实来源。
-  - 查看 `internal/db/models.go` 来了解所有表和字段。
-- **自动迁移**: 应用在每次启动时会自动执行 `AutoMigrate`，确保数据库表结构与最新的模型代码保持一致。
+#### `air:down`
+
+> 停止 Air 开发服（保留数据库卷）
+
+-   **运行命令**: `task air:down`
+-   **执行内容**: `docker compose -f docker-compose.dev.yml --env-file .env.dev down`
+-   **说明**: 停止开发环境的容器，并保留数据卷。
+
+#### `air:logs`
+
+> 查看 API 日志
+
+-   **运行命令**: `task air:logs`
+-   **执行内容**: `docker compose -f docker-compose.dev.yml --env-file .env.dev logs -f api`
+-   **说明**: 实时查看开发环境中 `api` 服务的日志，方便调试。
+
+#### `air:ps`
+
+> 查看容器状态
+
+-   **运行命令**: `task air:ps`
+-   **执行内容**: `docker compose -f docker-compose.dev.yml --env-file .env.dev ps`
+-   **说明**: 列出当前开发环境下所有容器的运行状态。
+
+#### `air:purge`
+
+> 停止 Air 开发服并彻底删除所有卷（清空数据库）
+
+-   **运行命令**: `task air:purge`
+-   **执行内容**: `docker compose -f docker-compose.dev.yml --env-file .env.dev down --volumes`
+-   **说明**: 彻底清理开发环境，包括容器和所有数据卷。
 
 ---
 
-## ✅ Taskfile 命令速查
+## 📚 API 文档
 
-- `task run`: 在本地直接运行应用。
-- `task build`: 构建生产环境的二进制文件到 `bin/` 目录。
-- `task test`: 运行所有单元测试。
-- `task docker:up`: 构建并启动 Docker 测试环境。
-- `task docker:down`: 停止 Docker 测试环境。
-- `task docker:logs`: 实时查看 Docker 中 API 服务的日志。
-- `task docker:ps`: 显示 Docker 测试环境中各容器的状态。
+API 规范定义在 `internal/openapi/学生服务平台 API.openapi.json`。
