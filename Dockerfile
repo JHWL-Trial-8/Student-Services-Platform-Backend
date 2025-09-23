@@ -3,7 +3,6 @@
 ########################
 #  Build (builder)     #
 ########################
-# 使用与运行期相同的 Alpine 主次版本，减少跨版本差异
 FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS builder
 
 # ---- 可调参数（按需覆盖） ----

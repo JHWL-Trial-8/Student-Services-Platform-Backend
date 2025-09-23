@@ -11,8 +11,6 @@ services:
     image: ${APP_IMAGE:-student-service-backend}:staging
     env_file:
       - .env.staging
-    environment:
-      SSP_SERVER_PORT: ${SSP_SERVER_PORT:-8080}
     ports:
       - "${API_PORT:-8080}:${SSP_SERVER_PORT:-8080}"
     # 运行期健康检查已在 Dockerfile 中定义；如需覆盖，可取消注释下方自定义
@@ -42,10 +40,6 @@ services:
     container_name: postgres-staging
     env_file:
       - .env.staging
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-student_service}
     volumes:
       - pgdata-staging:/var/lib/postgresql/data
     healthcheck:

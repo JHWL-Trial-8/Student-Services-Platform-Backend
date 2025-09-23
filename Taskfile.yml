@@ -41,6 +41,11 @@ tasks:
     cmds:
       - docker compose -f docker-compose.staging.yml --env-file .env.staging ps
 
+  docker:purge:
+    desc: 停止测试服并彻底删除所有卷（清空数据库）
+    cmds:
+      - docker compose -f docker-compose.staging.yml --env-file .env.staging down --volumes
+
   air:up:
     desc: 启动 Air 开发服（构建镜像并后台运行）
     cmds:
