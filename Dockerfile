@@ -7,7 +7,7 @@
 FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS builder
 
 # ---- 可调参数（按需覆盖） ----
-ARG ALPINE_MIRROR=https://mirrors.aliyun.com        # 可传入: https://mirrors.aliyun.com / https://mirrors.tuna.tsinghua.edu.cn / https://mirrors.cloud.tencent.com
+ARG ALPINE_MIRROR=https://dl-cdn.alpinelinux.org        # 可传入: https://mirrors.aliyun.com / https://mirrors.tuna.tsinghua.edu.cn / https://mirrors.cloud.tencent.com
 ARG USE_CGO=0                                            # 需要 sqlite 时传 1
 ARG GOPROXY=https://proxy.golang.org,direct              # 国内可传 https://goproxy.cn,direct
 ARG GONOSUMDB=
