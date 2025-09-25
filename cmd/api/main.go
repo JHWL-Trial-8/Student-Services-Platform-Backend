@@ -12,8 +12,10 @@ import (
 	httpmw "student-services-platform-backend/internal/http"
 
 	"student-services-platform-backend/app/controllers/AuthController"
+	"student-services-platform-backend/app/controllers/UserController"
 	"student-services-platform-backend/app/router"
 	"student-services-platform-backend/app/services/auth"
+	usersvc "student-services-platform-backend/app/services/user"
 )
 
 func main() {
@@ -47,6 +49,7 @@ func main() {
 		Audience:       cfg.JWT.Audience,
 	})
 	AuthController.Svc = authSvc // 注入
+	UserController.Svc = usersvc.NewService(database) // 注入
 
 	// 路由
 	r := gin.New()
@@ -57,7 +60,7 @@ func main() {
 		api.GET("/healthz", func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"ok": true, "ts": time.Now().UTC().Format(time.RFC3339)})
 		})
-		router.Init(api, cfg) // 在这里挂载 /auth/login 和 /auth/register
+		router.Init(api, cfg) // 在这里挂载
 	}
 
 	log.Printf("listening on :%s (mode=%s)", cfg.Server.Port, gin.Mode())

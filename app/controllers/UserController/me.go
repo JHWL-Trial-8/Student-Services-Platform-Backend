@@ -2,28 +2,22 @@ package UserController
 
 import (
 	"net/http"
-	"os/user"
-	"student-services-platform-backend/app/services/user"
+	usersvc "student-services-platform-backend/app/services/user"
 
 	"github.com/gin-gonic/gin"
 )
 
+// 注入
+var Svc *usersvc.Service
+
 func GetUserInform(c *gin.Context) {
-	idVal, exists := c.Get("id")
-	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "用户 ID 未找到",
-		})
+	idStr := c.GetString("id")
+	if idStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "用户 ID 未找到"})
 		return
 	}
-	idStr, ok := idVal.(string)
-	if !ok {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "用户 ID 类型错误",
-		})
-		return
-	}
-	userinfo, err := user.GetUserInfomationByID(idStr)
+
+	userinfo, err := Svc.GetUserInfomationByID(idStr)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
