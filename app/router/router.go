@@ -19,6 +19,7 @@ func Init(api *gin.RouterGroup, cfg *config.Config) {
 	user := api.Group("/users")
 	{
 		user.GET("/me", midwares.JWTAuthMidware(cfg.JWT.SecretKey), UserController.GetUserInform)
-
+		// update current user profile
+		user.PUT("/me", midwares.JWTAuthMidware(cfg.JWT.SecretKey), UserController.UpdateMe)
 	}
 }

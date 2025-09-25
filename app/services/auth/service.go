@@ -114,7 +114,7 @@ func (s *Service) Login(email, password string) (*openapi.AuthLoginPost200Respon
 
 	return &openapi.AuthLoginPost200Response{
 		AccessToken: tokenResp.AccessToken,
-		TokenType:   "bearer",
+		TokenType:   "Bearer",
 		ExpiresIn:   int32(tokenResp.ExpiresIn.Seconds()),
 	}, nil
 }
