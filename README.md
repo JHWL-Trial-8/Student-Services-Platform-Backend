@@ -20,9 +20,8 @@
 ```dotenv
 # .env.staging
 POSTGRES_PASSWORD=YourStrongPasswordHere
-JWT_SECRET=YourJWTSECRETHere
+SSP_JWT_SECRET=YourJWTSECRETHere
 POSTGRES_USER=postgres
-POSTGRES_PASSWORD=JHWL2025-8
 POSTGRES_DB=ssp
 SSP_DATABASE_DSN="postgres://postgres:YourStrongPasswordHere@db:5432/ssp?sslmode=disable"
 ALPINE_MIRROR=https://mirrors.tuna.tsinghua.edu.cn
@@ -36,7 +35,7 @@ ALPINE_MIRROR=https://mirrors.tuna.tsinghua.edu.cn
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=YourStrongPasswordHere
 POSTGRES_DB=ssp
-JWT_SECRET=YourStrongPasswordHere
+SSP_JWT_SECRET=YourStrongPasswordHere
 ALPINE_MIRROR=https://mirrors.tuna.tsinghua.edu.cn
 ```
 
