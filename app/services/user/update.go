@@ -19,7 +19,7 @@ type UpdateFields struct {
 type ErrEmailTaken struct{ Email string }
 func (e *ErrEmailTaken) Error() string { return fmt.Sprintf("邮箱已被占用: %s", e.Email) }
 
-func (s *Service) UpdateUserInfomationByID(id uint, f UpdateFields) (*openapi.User, error) {
+func (s *Service) UpdateByID(id uint, f UpdateFields) (*openapi.User, error) {
 	// 取用户
 	u, err := dbpkg.GetUserByID(s.db, id)
 	if err != nil {

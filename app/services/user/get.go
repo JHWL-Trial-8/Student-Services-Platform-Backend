@@ -16,7 +16,7 @@ func NewService(db *gorm.DB) *Service {
 	return &Service{db: db}
 }
 
-func (s *Service) GetUserInfomationByID(id string) (*openapi.User, error) {
+func (s *Service) GetByID(id string) (*openapi.User, error) {
 	var u db.User
 	if err := s.db.Where("id = ?", id).First(&u).Error; err != nil {
 		return nil, err

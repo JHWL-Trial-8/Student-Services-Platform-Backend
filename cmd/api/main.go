@@ -9,11 +9,11 @@ import (
 
 	"student-services-platform-backend/internal/config"
 	dbpkg "student-services-platform-backend/internal/db"
-	httpmw "student-services-platform-backend/internal/http"
+	httpserver "student-services-platform-backend/internal/httpserver"
 
-	"student-services-platform-backend/app/controllers/AuthController"
-	"student-services-platform-backend/app/controllers/TicketController"
-	"student-services-platform-backend/app/controllers/UserController"
+	"student-services-platform-backend/app/api/auth"
+	"student-services-platform-backend/app/api/ticket"
+	"student-services-platform-backend/app/api/user"
 	"student-services-platform-backend/app/router"
 	"student-services-platform-backend/app/services/auth"
 	ticketsvc "student-services-platform-backend/app/services/ticket"
@@ -50,22 +50,22 @@ func main() {
 		Issuer:         cfg.JWT.Issuer,
 		Audience:       cfg.JWT.Audience,
 	})
-	AuthController.Svc = authSvc
-	UserController.Svc = usersvc.NewService(database)
 
-	// 工单服务
-	TicketController.Svc = ticketsvc.NewService(database)
+	// 创建处理器
+	authH := authapi.New(authSvc)
+	userH := userapi.New(usersvc.NewService(database))
+	ticketH := ticketapi.New(ticketsvc.NewService(database))
 
 	// 路由
 	r := gin.New()
-	r.Use(gin.Logger(), gin.Recovery(), httpmw.CORS(cfg.CORS))
+	r.Use(gin.Logger(), gin.Recovery(), httpserver.CORS(cfg.CORS))
 
 	api := r.Group("/api/v1")
 	{
 		api.GET("/healthz", func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"ok": true, "ts": time.Now().UTC().Format(time.RFC3339)})
 		})
-		router.Init(api, cfg)
+		router.Init(api, cfg, authH, userH, ticketH)
 	}
 
 	log.Printf("listening on :%s (mode=%s)", cfg.Server.Port, gin.Mode())
