@@ -36,5 +36,8 @@ func Init(api *gin.RouterGroup, cfg *config.Config) {
 		// 消息流
 		tickets.GET("/:id/messages", TicketController.ListMessages)
 		tickets.POST("/:id/messages", TicketController.PostMessage)
+
+		// 评分
+		tickets.POST("/:id/rate", TicketController.Rate)
 	}
 }
