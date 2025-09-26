@@ -39,3 +39,12 @@ func GetTicketImageIDs(d *gorm.DB, ticketID uint) ([]uint, error) {
 	err := d.Model(&TicketImage{}).Where("ticket_id = ?", ticketID).Pluck("image_id", &ids).Error
 	return ids, err
 }
+
+// 根据 ID 获取 Ticket
+func GetTicketByID(d *gorm.DB, id uint) (*Ticket, error) {
+	var t Ticket
+	if err := d.First(&t, id).Error; err != nil {
+		return nil, err
+	}
+	return &t, nil
+}

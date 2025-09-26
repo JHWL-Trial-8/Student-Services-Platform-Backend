@@ -28,5 +28,13 @@ func Init(api *gin.RouterGroup, cfg *config.Config) {
 	{
 		// POST /tickets
 		tickets.POST("", TicketController.Create)
+
+		// 列表 & 详情
+		tickets.GET("", TicketController.List)
+		tickets.GET("/:id", TicketController.Detail)
+
+		// 消息流
+		tickets.GET("/:id/messages", TicketController.ListMessages)
+		tickets.POST("/:id/messages", TicketController.PostMessage)
 	}
 }
