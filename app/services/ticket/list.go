@@ -1,28 +1,12 @@
 package ticket
 
 import (
-	"errors"
-
 	dbpkg "student-services-platform-backend/internal/db"
 	"student-services-platform-backend/internal/openapi"
 
+	"errors"
 	"gorm.io/gorm"
 )
-
-type ErrForbidden struct{ Reason string }
-func (e *ErrForbidden) Error() string { return "forbidden: " + e.Reason }
-
-type ErrNotFound struct{ Resource string }
-func (e *ErrNotFound) Error() string { return "not found: " + e.Resource }
-
-// ---- 辅助 ----
-func (s *Service) currentUser(db *gorm.DB, uid uint) (*dbpkg.User, error) {
-	return dbpkg.GetUserByID(db, uid)
-}
-
-func isAdmin(role dbpkg.Role) bool {
-	return role == dbpkg.RoleAdmin || role == dbpkg.RoleSuperAdmin
-}
 
 type ListFilters struct {
 	Status       string // optional
@@ -110,12 +94,4 @@ func (s *Service) ListTickets(currentUID uint, f ListFilters, page, pageSize int
 		PageSize: int32(pageSize),
 		Total:    int32(total),
 	}, nil
-}
-
-func toPtrInt32FromUintPtr(p *uint) *int32 {
-	if p == nil {
-		return nil
-	}
-	v := int32(*p)
-	return &v
 }

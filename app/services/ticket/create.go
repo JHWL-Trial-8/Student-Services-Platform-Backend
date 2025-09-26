@@ -1,7 +1,6 @@
 package ticket
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -11,30 +10,6 @@ import (
 
 	"gorm.io/gorm"
 )
-
-// Service 封装工单领域逻辑
-type Service struct {
-	db *gorm.DB
-}
-
-func NewService(db *gorm.DB) *Service { return &Service{db: db} }
-
-// ---- Errors ----
-
-type ErrValidation struct {
-	Message string
-	Details map[string]interface{}
-}
-
-func (e *ErrValidation) Error() string { return e.Message }
-
-type ErrImageNotFound struct {
-	Missing []uint
-}
-
-func (e *ErrImageNotFound) Error() string { return fmt.Sprintf("图片不存在: %v", e.Missing) }
-
-// ---- Usecases ----
 
 // CreateTicket 创建工单并可选关联图片
 func (s *Service) CreateTicket(userID uint, in openapi.TicketCreate) (*openapi.Ticket, error) {
@@ -139,8 +114,8 @@ func (s *Service) CreateTicket(userID uint, in openapi.TicketCreate) (*openapi.T
 		IsUrgent:      created.IsUrgent,
 		IsAnonymous:   created.IsAnonymous,
 		Status:        openapi.TicketStatus(created.Status),
-		AssignedAdminId: nil,
-		ClaimedAt:       nil,
+		AssignedAdminId: toPtrInt32FromUintPtr(created.AssignedAdminID),
+		ClaimedAt:       created.ClaimedAt,
 		CreatedAt:       created.CreatedAt,
 		UpdatedAt:       created.UpdatedAt,
 		ImageIds:        imgIDs32,

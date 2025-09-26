@@ -1,35 +1,17 @@
 package ticket
 
 import (
-	"errors"
 	"strings"
 	"time"
 
 	dbpkg "student-services-platform-backend/internal/db"
 	"student-services-platform-backend/internal/openapi"
-
-	"gorm.io/gorm"
 )
 
 func (s *Service) ListMessages(currentUID, ticketID uint, page, pageSize int) (*openapi.PagedTicketMessages, error) {
-	u, err := s.currentUser(s.db, currentUID)
+	u, _, err := s.getTicketWithAccessCheck(currentUID, ticketID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &ErrForbidden{Reason: "user not found"}
-		}
 		return nil, err
-	}
-
-	// ticket 存在性 + 所属校验
-	var t dbpkg.Ticket
-	if err := s.db.First(&t, ticketID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &ErrNotFound{Resource: "ticket"}
-		}
-		return nil, err
-	}
-	if !isAdmin(u.Role) && t.UserID != currentUID {
-		return nil, &ErrForbidden{Reason: "student cannot view others' messages"}
 	}
 
 	q := s.db.Model(&dbpkg.TicketMessage{}).Where("ticket_id = ?", ticketID)
@@ -85,38 +67,19 @@ func (s *Service) PostMessage(currentUID, ticketID uint, body string, isInternal
 		}
 	}
 
-	u, err := s.currentUser(s.db, currentUID)
+	u, t, err := s.getTicketWithAccessCheck(currentUID, ticketID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &ErrForbidden{Reason: "user not found"}
-		}
 		return nil, err
 	}
 
-	// ticket 存在性 + 关联校验
-	var t dbpkg.Ticket
-	if err := s.db.First(&t, ticketID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &ErrNotFound{Resource: "ticket"}
-		}
-		return nil, err
-	}
-
-	// 权限：
-	// - 学生只能在自己的工单下发消息；且不能发内部备注
-	// - 管理员/超管可在任何工单下发消息；允许内部备注
-	if !isAdmin(u.Role) {
-		if t.UserID != currentUID {
-			return nil, &ErrForbidden{Reason: "student cannot post to others' ticket"}
-		}
-		if isInternal {
-			return nil, &ErrForbidden{Reason: "student cannot post internal note"}
-		}
+	// 权限：学生不能发内部备注
+	if !isAdmin(u.Role) && isInternal {
+		return nil, &ErrForbidden{Reason: "student cannot post internal note"}
 	}
 
 	now := time.Now()
 	m := &dbpkg.TicketMessage{
-		TicketID:       ticketID,
+		TicketID:       t.ID,
 		SenderUserID:   currentUID,
 		Body:           body,
 		IsInternalNote: isInternal && isAdmin(u.Role),

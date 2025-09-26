@@ -1,35 +1,14 @@
 package ticket
 
 import (
-	"errors"
-
 	dbpkg "student-services-platform-backend/internal/db"
 	"student-services-platform-backend/internal/openapi"
-
-	"gorm.io/gorm"
 )
 
 func (s *Service) GetTicketDetail(currentUID, ticketID uint) (*openapi.TicketDetail, error) {
-	u, err := s.currentUser(s.db, currentUID)
+	_, t, err := s.getTicketWithAccessCheck(currentUID, ticketID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &ErrForbidden{Reason: "user not found"}
-		}
 		return nil, err
-	}
-
-	// 取工单
-	var t dbpkg.Ticket
-	if err := s.db.First(&t, ticketID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &ErrNotFound{Resource: "ticket"}
-		}
-		return nil, err
-	}
-
-	// 权限：学生仅可看自己的
-	if !isAdmin(u.Role) && t.UserID != currentUID {
-		return nil, &ErrForbidden{Reason: "student cannot view others' ticket"}
 	}
 
 	// 图片

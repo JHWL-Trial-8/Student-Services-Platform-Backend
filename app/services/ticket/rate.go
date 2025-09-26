@@ -1,38 +1,25 @@
 package ticket
 
 import (
-	"errors"
 	"strings"
 	"time"
 
 	dbpkg "student-services-platform-backend/internal/db"
 	"student-services-platform-backend/internal/openapi"
 
+	"errors"
 	"gorm.io/gorm"
 )
 
-// ErrAlreadyRated: 当前工单已被评价
-type ErrAlreadyRated struct{ TicketID uint }
-func (e *ErrAlreadyRated) Error() string { return "already rated" }
-
 // RateTicket 学生对自己的工单进行一次性评分
 func (s *Service) RateTicket(currentUID, ticketID uint, stars int, comment string) (*openapi.Rating, error) {
-	// 校验登录用户存在
-	if _, err := s.currentUser(s.db, currentUID); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &ErrForbidden{Reason: "user not found"}
-		}
+	// 校验登录用户存在和工单权限
+	_, t, err := s.getTicketWithAccessCheck(currentUID, ticketID)
+	if err != nil {
 		return nil, err
 	}
-
-	// 校验工单存在 & 归属
-	var t dbpkg.Ticket
-	if err := s.db.First(&t, ticketID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &ErrNotFound{Resource: "ticket"}
-		}
-		return nil, err
-	}
+	
+	// 评分权限更严格：只能是创建者本人
 	if t.UserID != currentUID {
 		return nil, &ErrForbidden{Reason: "only ticket creator can rate"}
 	}
