@@ -14,6 +14,15 @@ require (
 	gorm.io/gorm v1.31.0
 )
 
+// Test dependencies
+require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2
+	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify/assert v1.9.0
+	github.com/stretchr/testify/mock v1.9.0
+	github.com/stretchr/testify/suite v1.9.0
+)
+
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/bytedance/sonic v1.11.6 // indirect

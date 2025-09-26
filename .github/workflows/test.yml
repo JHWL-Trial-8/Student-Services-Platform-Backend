@@ -1,0 +1,86 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ssp_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24.6'
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v3
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Get dependencies
+      run: |
+        go mod download
+        go mod tidy
+
+    - name: Run linter
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+        args: --timeout=5m
+
+    - name: Run unit tests
+      run: make test-unit
+      env:
+        SSP_DATABASE_DRIVER: postgres
+        SSP_DATABASE_DSN: postgres://postgres:postgres@localhost:5432/ssp_test?sslmode=disable
+
+    - name: Run integration tests
+      run: make test-integration
+      env:
+        SSP_DATABASE_DRIVER: postgres
+        SSP_DATABASE_DSN: postgres://postgres:postgres@localhost:5432/ssp_test?sslmode=disable
+
+    - name: Generate coverage report
+      run: make test-coverage
+      env:
+        SSP_DATABASE_DRIVER: postgres
+        SSP_DATABASE_DSN: postgres://postgres:postgres@localhost:5432/ssp_test?sslmode=disable
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.out
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: true
+
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: coverage.html
