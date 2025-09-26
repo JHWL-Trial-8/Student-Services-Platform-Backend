@@ -26,7 +26,7 @@ func Init(api *gin.RouterGroup, cfg *config.Config) {
 
 	tickets := api.Group("/tickets", midwares.JWTAuthMidware(cfg.JWT.SecretKey))
 	{
-		// POST /tickets
+		// 创建
 		tickets.POST("", TicketController.Create)
 
 		// 列表 & 详情
