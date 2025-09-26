@@ -12,16 +12,18 @@ import (
 	httpmw "student-services-platform-backend/internal/http"
 
 	"student-services-platform-backend/app/controllers/AuthController"
+	"student-services-platform-backend/app/controllers/TicketController"
 	"student-services-platform-backend/app/controllers/UserController"
 	"student-services-platform-backend/app/router"
 	"student-services-platform-backend/app/services/auth"
+	ticketsvc "student-services-platform-backend/app/services/ticket"
 	usersvc "student-services-platform-backend/app/services/user"
 )
 
 func main() {
 	cfg := config.MustLoad()
 
-	// 根据配置设置 Gin 模式
+	// Gin 模式
 	switch cfg.Server.Mode {
 	case gin.ReleaseMode:
 		gin.SetMode(gin.ReleaseMode)
@@ -31,7 +33,7 @@ func main() {
 		gin.SetMode(gin.DebugMode)
 	}
 
-	// 初始化数据库
+	// 数据库
 	database := dbpkg.MustOpen(cfg.Database)
 	if err := dbpkg.AutoMigrate(database); err != nil {
 		log.Fatalf("db: 自动迁移失败: %v", err)
@@ -40,7 +42,7 @@ func main() {
 		defer sqlDB.Close()
 	}
 
-	// 构建认证服务
+	// 认证服务
 	accessExp, _ := time.ParseDuration(cfg.JWT.AccessTokenExp)
 	authSvc := auth.NewService(database, &auth.JWTConfig{
 		SecretKey:      cfg.JWT.SecretKey,
@@ -48,8 +50,11 @@ func main() {
 		Issuer:         cfg.JWT.Issuer,
 		Audience:       cfg.JWT.Audience,
 	})
-	AuthController.Svc = authSvc // 注入
-	UserController.Svc = usersvc.NewService(database) // 注入
+	AuthController.Svc = authSvc
+	UserController.Svc = usersvc.NewService(database)
+
+	// 工单服务
+	TicketController.Svc = ticketsvc.NewService(database)
 
 	// 路由
 	r := gin.New()
@@ -60,7 +65,7 @@ func main() {
 		api.GET("/healthz", func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"ok": true, "ts": time.Now().UTC().Format(time.RFC3339)})
 		})
-		router.Init(api, cfg) // 在这里挂载
+		router.Init(api, cfg)
 	}
 
 	log.Printf("listening on :%s (mode=%s)", cfg.Server.Port, gin.Mode())

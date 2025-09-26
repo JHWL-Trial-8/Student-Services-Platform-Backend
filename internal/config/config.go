@@ -69,7 +69,7 @@ func defaults(v *viper.Viper) {
 	v.SetDefault("database.log_level", "warn")
 
 	v.SetDefault("jwt.secret_key", "")
-	v.SetDefault("jwt.access_token_exp", "1h")
+	v.SetDefault("jwt.access_token_exp", "6h")
 	v.SetDefault("jwt.issuer", "ssp")
 	v.SetDefault("jwt.audience", "ssp-web")
 }
