@@ -1,4 +1,4 @@
-package midwares
+package middleware
 
 import (
 	"errors"
@@ -9,7 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func JWTAuthMidware(secretKey string) gin.HandlerFunc {
+func JWTAuth(secretKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {

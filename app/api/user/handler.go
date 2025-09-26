@@ -1,4 +1,4 @@
-package UserController
+package userapi
 
 import (
 	"net/http"
@@ -9,17 +9,22 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// 注入
-var Svc *usersvc.Service
+type Handler struct {
+	svc *usersvc.Service
+}
 
-func GetUserInform(c *gin.Context) {
+func New(s *usersvc.Service) *Handler {
+	return &Handler{svc: s}
+}
+
+func (h *Handler) GetMe(c *gin.Context) {
 	idStr := c.GetString("id")
 	if idStr == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "用户 ID 未找到"})
 		return
 	}
 
-	userinfo, err := Svc.GetUserInfomationByID(idStr)
+	userinfo, err := h.svc.GetByID(idStr)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "获取用户失败",
@@ -39,7 +44,7 @@ type updateMePayload struct {
 	AllowEmail *bool   `json:"allow_email"`  // optional
 }
 
-func UpdateMe(c *gin.Context) {
+func (h *Handler) UpdateMe(c *gin.Context) {
 	idStr := c.GetString("id")
 	if idStr == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "用户 ID 未找到"})
@@ -62,7 +67,7 @@ func UpdateMe(c *gin.Context) {
 		return
 	}
 
-	out, err := Svc.UpdateUserInfomationByID(uint(uid64), usersvc.UpdateFields{
+	out, err := h.svc.UpdateByID(uint(uid64), usersvc.UpdateFields{
 		Email:      req.Email,
 		Name:       req.Name,
 		Phone:      req.Phone,
