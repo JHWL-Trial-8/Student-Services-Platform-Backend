@@ -2,7 +2,7 @@ package userapi
 
 import (
 	"net/http"
-	"strconv"
+	"student-services-platform-backend/app/contextkeys"
 
 	usersvc "student-services-platform-backend/app/services/user"
 	"github.com/gin-gonic/gin"
@@ -18,14 +18,14 @@ type updateMePayload struct {
 }
 
 func (h *Handler) UpdateMe(c *gin.Context) {
-	idStr := c.GetString("id")
-	if idStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "用户 ID 未找到"})
+	val, exists := c.Get(string(contextkeys.UserIDKey))
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "用户 ID 未找到"})
 		return
 	}
-	uid64, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的用户 ID"})
+	uid, ok := val.(uint)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "上下文用户ID类型错误"})
 		return
 	}
 
@@ -40,7 +40,7 @@ func (h *Handler) UpdateMe(c *gin.Context) {
 		return
 	}
 
-	out, err := h.svc.UpdateByID(uint(uid64), usersvc.UpdateFields{
+	out, err := h.svc.UpdateByID(uid, usersvc.UpdateFields{
 		Email:      req.Email,
 		Name:       req.Name,
 		Phone:      req.Phone,

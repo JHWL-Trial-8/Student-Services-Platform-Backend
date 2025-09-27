@@ -3,6 +3,8 @@ package middleware
 import (
 	"errors"
 	"net/http"
+	"strconv"
+	"student-services-platform-backend/app/contextkeys"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -62,7 +64,15 @@ func JWTAuth(secretKey string) gin.HandlerFunc {
 				})
 				return
 			}
-			c.Set("id", sub)
+			
+			uid64, err := strconv.ParseUint(sub, 10, 64)
+			if err != nil {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token 中用户ID无效"})
+				return
+			}
+
+			// 直接存入 uint 类型，下游不再需要转换
+			c.Set(string(contextkeys.UserIDKey), uint(uid64))
 			c.Next()
 		} else {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{

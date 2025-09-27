@@ -16,18 +16,8 @@ import (
 func (h *Handler) currentUID(c *gin.Context) (uint, bool) {
 	val, exists := c.Get(string(contextkeys.UserIDKey))
 	if !exists {
-		// 如果 RBAC 中间件未运行，则从 JWT claim 中回退
-		idStr := c.GetString("id")
-		if idStr == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "未认证"})
-			return 0, false
-		}
-		uid64, err := strconv.ParseUint(idStr, 10, 64)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "无效的用户 ID"})
-			return 0, false
-		}
-		return uint(uid64), true
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "未认证"})
+		return 0, false
 	}
 
 	uid, ok := val.(uint)
