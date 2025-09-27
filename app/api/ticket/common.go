@@ -1,27 +1,41 @@
 package ticketapi
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
 
+	"student-services-platform-backend/app/contextkeys"
 	ticketsvc "student-services-platform-backend/app/services/ticket"
+
 	"github.com/gin-gonic/gin"
 )
 
-// 取得当前登录用户 ID
+// currentUID 从 context 安全地获取用户 ID
 func (h *Handler) currentUID(c *gin.Context) (uint, bool) {
-	uidStr := c.GetString("id")
-	if uidStr == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "未认证"})
+	val, exists := c.Get(string(contextkeys.UserIDKey))
+	if !exists {
+		// 如果 RBAC 中间件未运行，则从 JWT claim 中回退
+		idStr := c.GetString("id")
+		if idStr == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "未认证"})
+			return 0, false
+		}
+		uid64, err := strconv.ParseUint(idStr, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "无效的用户 ID"})
+			return 0, false
+		}
+		return uint(uid64), true
+	}
+
+	uid, ok := val.(uint)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "上下文用户ID类型错误"})
 		return 0, false
 	}
-	uid64, err := strconv.ParseUint(uidStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的用户 ID"})
-		return 0, false
-	}
-	return uint(uid64), true
+	return uid, true
 }
 
 // 解析路径参数 :id
@@ -73,22 +87,27 @@ func (h *Handler) parseBoolQuery(c *gin.Context, key string) (*bool, bool) {
 }
 
 // 将 service 错误统一映射为 HTTP
-func (h *Handler) handleTicketSvcErr(c *gin.Context, err error, fallback string) bool {
+func (h *Handler) handleTicketSvcErr(c *gin.Context, err error, fallback string) {
 	switch e := err.(type) {
 	case *ticketsvc.ErrForbidden:
-		c.JSON(http.StatusForbidden, gin.H{"error": "无权限"})
+		c.JSON(http.StatusForbidden, gin.H{"error": "无权限", "details": e.Reason})
 	case *ticketsvc.ErrNotFound:
 		c.JSON(http.StatusNotFound, gin.H{"error": "资源不存在"})
 	case *ticketsvc.ErrValidation:
-		c.JSON(http.StatusBadRequest, gin.H{"error": e.Error(), "details": e.Details})
+		c.JSON(http.StatusBadRequest, gin.H{"error": e.Message, "details": e.Details})
 	case *ticketsvc.ErrImageNotFound:
 		c.JSON(http.StatusBadRequest, gin.H{"error": "部分图片不存在", "details": gin.H{"missing_image_ids": e.Missing}})
 	case *ticketsvc.ErrAlreadyRated:
 		c.JSON(http.StatusConflict, gin.H{"error": "该工单已评价"})
+	case *ticketsvc.ErrConflict:
+		c.JSON(http.StatusConflict, gin.H{"error": e.Message})
+	case *ticketsvc.ErrInvalidState:
+		c.JSON(http.StatusBadRequest, gin.H{"error": e.Message}) // 状态机错误通常是客户端请求时机不对
 	default:
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fallback, "details": err.Error()})
+		// 避免暴露过多内部错误细节
+		log.Printf("Internal server error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fallback})
 	}
-	return true
 }
 
 // 统一 JSON 绑定

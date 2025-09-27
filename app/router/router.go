@@ -1,47 +1,58 @@
 package router
 
 import (
-	"student-services-platform-backend/app/api/auth"
-	"student-services-platform-backend/app/api/ticket"
-	"student-services-platform-backend/app/api/user"
+	authapi "student-services-platform-backend/app/api/auth"
+	ticketapi "student-services-platform-backend/app/api/ticket"
+	userapi "student-services-platform-backend/app/api/user"
 	"student-services-platform-backend/app/middleware"
 	"student-services-platform-backend/internal/config"
+	dbpkg "student-services-platform-backend/internal/db"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-func Init(api *gin.RouterGroup, cfg *config.Config,
+func Init(
+	api *gin.RouterGroup,
+	cfg *config.Config,
+	database *gorm.DB,
 	authH *authapi.Handler,
 	userH *userapi.Handler,
 	ticketH *ticketapi.Handler,
 ) {
-
-	auth := api.Group("/auth")
+	authRG := api.Group("/auth")
 	{
-		auth.POST("/login", authH.Login)
-		auth.POST("/register", authH.Register)
+		authRG.POST("/login", authH.Login)
+		authRG.POST("/register", authH.Register)
 	}
 
-	user := api.Group("/users")
+	userRG := api.Group("/users")
 	{
-		user.GET("/me", middleware.JWTAuth(cfg.JWT.SecretKey), userH.GetMe)
-		user.PUT("/me", middleware.JWTAuth(cfg.JWT.SecretKey), userH.UpdateMe)
+		userRG.GET("/me", middleware.JWTAuth(cfg.JWT.SecretKey), userH.GetMe)
+		userRG.PUT("/me", middleware.JWTAuth(cfg.JWT.SecretKey), userH.UpdateMe)
 	}
 
-	tickets := api.Group("/tickets", middleware.JWTAuth(cfg.JWT.SecretKey))
+	ticketsRG := api.Group("/tickets", middleware.JWTAuth(cfg.JWT.SecretKey))
 	{
-		// 创建
-		tickets.POST("", ticketH.Create)
+		// 学生/管理员共有
+		ticketsRG.POST("", ticketH.Create)
+		ticketsRG.GET("", ticketH.List)
+		ticketsRG.GET("/:id", ticketH.Detail)
+		ticketsRG.GET("/:id/messages", ticketH.ListMessages)
+		ticketsRG.POST("/:id/messages", ticketH.PostMessage)
+		ticketsRG.POST("/:id/rate", ticketH.Rate)
 
-		// 列表 & 详情
-		tickets.GET("", ticketH.List)
-		tickets.GET("/:id", ticketH.Detail)
+		// 管理员工作流
+		adminOnly := middleware.RequireRole(database, dbpkg.RoleAdmin, dbpkg.RoleSuperAdmin)
+		superAdminOnly := middleware.RequireRole(database, dbpkg.RoleSuperAdmin)
 
-		// 消息流
-		tickets.GET("/:id/messages", ticketH.ListMessages)
-		tickets.POST("/:id/messages", ticketH.PostMessage)
+		ticketsRG.POST("/:id/claim", adminOnly, ticketH.Claim)
+		ticketsRG.POST("/:id/unclaim", adminOnly, ticketH.Unclaim)
+		ticketsRG.POST("/:id/resolve", adminOnly, ticketH.Resolve)
+		ticketsRG.POST("/:id/close", adminOnly, ticketH.Close)
 
-		// 评分
-		tickets.POST("/:id/rate", ticketH.Rate)
+		// 垃圾标记 & 审核
+		ticketsRG.POST("/:id/spam-flag", adminOnly, ticketH.SpamFlag)
+		ticketsRG.POST("/:id/spam-review", superAdminOnly, ticketH.SpamReview)
 	}
 }

@@ -39,6 +39,14 @@ type ErrAlreadyRated struct{ TicketID uint }
 
 func (e *ErrAlreadyRated) Error() string { return "already rated" }
 
+type ErrInvalidState struct{ Message string }
+
+func (e *ErrInvalidState) Error() string { return "invalid state: " + e.Message }
+
+type ErrConflict struct{ Message string }
+
+func (e *ErrConflict) Error() string { return "conflict: " + e.Message }
+
 // ---- 共享辅助函数 ----
 
 func (s *Service) currentUser(db *gorm.DB, uid uint) (*dbpkg.User, error) {
