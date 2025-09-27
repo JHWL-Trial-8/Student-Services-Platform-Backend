@@ -8,3 +8,4 @@ config.yaml
 .env.staging
 .env.dev
 tmp
+data/

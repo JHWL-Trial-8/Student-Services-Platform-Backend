@@ -2,6 +2,7 @@ package router
 
 import (
 	authapi "student-services-platform-backend/app/api/auth"
+	imagesapi "student-services-platform-backend/app/api/images"
 	ticketapi "student-services-platform-backend/app/api/ticket"
 	userapi "student-services-platform-backend/app/api/user"
 	"student-services-platform-backend/app/middleware"
@@ -19,6 +20,7 @@ func Init(
 	authH *authapi.Handler,
 	userH *userapi.Handler,
 	ticketH *ticketapi.Handler,
+	imagesH *imagesapi.Handler,
 ) {
 	authRG := api.Group("/auth")
 	{
@@ -30,6 +32,13 @@ func Init(
 	{
 		userRG.GET("/me", middleware.JWTAuth(cfg.JWT.SecretKey), userH.GetMe)
 		userRG.PUT("/me", middleware.JWTAuth(cfg.JWT.SecretKey), userH.UpdateMe)
+	}
+
+	// 图片端点（需要认证）
+	imagesRG := api.Group("/images", middleware.JWTAuth(cfg.JWT.SecretKey))
+	{
+		imagesRG.POST("", imagesH.Upload)
+		imagesRG.GET("/:id", imagesH.Download)
 	}
 
 	ticketsRG := api.Group("/tickets", middleware.JWTAuth(cfg.JWT.SecretKey))

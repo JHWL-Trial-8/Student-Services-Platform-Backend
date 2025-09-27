@@ -45,11 +45,19 @@ type JWTConfig struct {
 	Audience       string `mapstructure:"audience"`
 }
 
+// 文件存储配置
+type FileStoreConfig struct {
+	// 所有存储对象的根目录（可以是相对路径或绝对路径）。
+	// 把图片放在 <root>/images/<sha[:2]>/<sha> 目录下
+	Root string `mapstructure:"root"`
+}
+
 type Config struct {
-	Server   ServerConfig   `mapstructure:"server"`
-	CORS     CORSConfig     `mapstructure:"cors"`
-	Database DatabaseConfig `mapstructure:"database"`
-	JWT      JWTConfig      `mapstructure:"jwt"`
+	Server    ServerConfig    `mapstructure:"server"`
+	CORS      CORSConfig      `mapstructure:"cors"`
+	Database  DatabaseConfig  `mapstructure:"database"`
+	JWT       JWTConfig       `mapstructure:"jwt"`
+	FileStore FileStoreConfig `mapstructure:"filestore"`
 }
 
 func defaults(v *viper.Viper) {
@@ -72,6 +80,8 @@ func defaults(v *viper.Viper) {
 	v.SetDefault("jwt.access_token_exp", "6h")
 	v.SetDefault("jwt.issuer", "ssp")
 	v.SetDefault("jwt.audience", "ssp-web")
+
+	v.SetDefault("filestore.root", "data")
 }
 
 // Load 从以下位置返回一个配置（按优先级顺序）：

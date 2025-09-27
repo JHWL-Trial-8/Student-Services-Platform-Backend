@@ -25,3 +25,6 @@ jwt:
   access_token_exp: "1h"
   issuer: "ssp"
   audience: "ssp-web"
+
+filestore:
+  root: "data"
