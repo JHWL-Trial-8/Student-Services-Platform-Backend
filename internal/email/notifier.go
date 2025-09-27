@@ -85,39 +85,27 @@ func (n *Notifier) NotifyTicketClaimed(ctx context.Context, ticketID uint, title
 
 // NotifyTicketResolved 通知工单已处理
 func (n *Notifier) NotifyTicketResolved(ctx context.Context, ticketID uint, title, resolution, handlerName, creatorEmail, handlerEmail string) error {
-	subject := fmt.Sprintf("工单已处理 - %s", title)
-	body := fmt.Sprintf(`
-	<!DOCTYPE html>
-	<html>
-	<head>
-		<meta charset="UTF-8">
-		<title>工单处理完成通知</title>
-	</head>
-	<body>
-		<h2>🎉 您的工单已处理完成</h2>
-		<p><strong>工单编号:</strong> #%d</p>
-		<p><strong>工单标题:</strong> %s</p>
-		<p><strong>处理人:</strong> %s</p>
-		<p><strong>处理时间:</strong> %s</p>
-		<div style="background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 5px;">
-			<h3>处理结果:</h3>
-			<p>%s</p>
-		</div>
-		<hr>
-		<p>如果您对处理结果满意，请给我们评价。如有问题，请联系我们。</p>
-	</body>
-	</html>
-	`, ticketID, title, handlerName, time.Now().Format("2006-01-02 15:04:05"), resolution)
-
+	// 使用模板发送邮件，而不是硬编码HTML
 	emailContext := map[string]interface{}{
 		"ticket_id":     ticketID,
+		"title":         title,
 		"resolution":    resolution,
-		"handler_name":  handlerName,
+		"admin_name":    handlerName,
+		"student_name":  "", // 这里需要从数据库查询学生姓名
+		"resolved_at":   time.Now().Format("2006-01-02 15:04:05"),
 		"creator_email": creatorEmail,
 		"handler_email": handlerEmail,
+		"ticket_url":    fmt.Sprintf("#/tickets/%d", ticketID), // 前端路由
 	}
 
-	return n.emailService.SendEmailWithDynamicRecipients(ctx, worker.EmailTypeTicketResolved, subject, body, emailContext)
+	// 使用动态收件人解析器
+	return n.emailService.SendEmailWithDynamicRecipients(
+		ctx,
+		worker.EmailTypeTicketResolved,
+		fmt.Sprintf("工单已处理 - %s", title),
+		"", // 空的body，使用模板
+		emailContext,
+	)
 }
 
 // NotifyNewMessage 通知收到新消息

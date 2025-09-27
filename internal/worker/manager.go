@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 )
 
 // Manager 异步任务管理器
@@ -104,6 +105,24 @@ func (m *Manager) SendMessageNotification(ctx context.Context,
 		SetContext("recipient_name", recipientName).
 		SetContext("sender_name", senderName).
 		SetContext("message_body", messageBody).
+		SetContext("ticket_url", getTicketURL(ticketID))
+
+	return m.client.EnqueueEmailTask(ctx, task)
+}
+
+// SendTicketResolvedNotification 发送工单已处理通知
+func (m *Manager) SendTicketResolvedNotification(ctx context.Context,
+	studentEmail, studentName, adminName, resolution string, ticketID uint, title string) error {
+
+	task := NewEmailTask(EmailTypeTicketResolved, []string{studentEmail}, "您的工单已处理完成", "").
+		SetPriority(EmailPriorityNormal).
+		SetTicketID(ticketID).
+		SetContext("ticket_id", ticketID).
+		SetContext("title", title).
+		SetContext("student_name", studentName).
+		SetContext("admin_name", adminName).
+		SetContext("resolution", resolution).
+		SetContext("resolved_at", time.Now().Format("2006-01-02 15:04:05")).
 		SetContext("ticket_url", getTicketURL(ticketID))
 
 	return m.client.EnqueueEmailTask(ctx, task)

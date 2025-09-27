@@ -26,6 +26,7 @@ type Config struct {
 type Service struct {
 	config            *Config
 	recipientResolver RecipientResolver
+	templateEngine    *TemplateEngine
 }
 
 // NewService 创建邮件服务
@@ -33,6 +34,7 @@ func NewService(config *Config) *Service {
 	return &Service{
 		config:            config,
 		recipientResolver: NewDefaultRecipientResolver(config.FromEmail), // 传入发件人邮箱作为默认管理员邮箱
+		templateEngine:    NewTemplateEngine(),
 	}
 }
 
@@ -41,6 +43,7 @@ func NewServiceWithResolver(config *Config, resolver RecipientResolver) *Service
 	return &Service{
 		config:            config,
 		recipientResolver: resolver,
+		templateEngine:    NewTemplateEngine(),
 	}
 }
 
@@ -146,8 +149,18 @@ func (s *Service) sendMailSSL(addr, username, password, from string, to []string
 
 // SendTemplateEmail 发送模板邮件
 func (s *Service) SendTemplateEmail(ctx context.Context, task *worker.EmailTask) error {
-	// 简化实现：直接发送邮件，不使用模板
-	return s.SendEmail(ctx, task)
+	// 渲染模板
+	templateBody, err := s.templateEngine.Render(string(task.Type), task.Context)
+	if err != nil {
+		return fmt.Errorf("模板渲染失败: %w", err)
+	}
+
+	// 创建新的任务，使用渲染后的内容
+	templateTask := *task // 复制任务
+	templateTask.Body = templateBody
+
+	// 发送邮件
+	return s.SendEmail(ctx, &templateTask)
 }
 
 // SendEmailWithDynamicRecipients 发送邮件（动态确定收件人）

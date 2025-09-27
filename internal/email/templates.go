@@ -114,6 +114,45 @@ func (e *TemplateEngine) loadBuiltinTemplates() {
 </body>
 </html>`,
 
+		"ticket_resolved": `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>工单处理完成通知</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #28a745;">🎉 您的工单已处理完成</h2>
+        <p>{{.student_name}} 同学，</p>
+        <p>您提交的工单已经处理完成：</p>
+        
+        <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <p><strong>工单编号：</strong>{{.ticket_id}}</p>
+            <p><strong>标题：</strong>{{.title}}</p>
+            <p><strong>处理人员：</strong>{{.admin_name}}</p>
+            <p><strong>处理时间：</strong>{{.resolved_at}}</p>
+        </div>
+        
+        <div style="background: #e8f5e8; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #28a745;">
+            <h3 style="margin-top: 0; color: #155724;">处理结果：</h3>
+            <p style="margin-bottom: 0;">{{.resolution}}</p>
+        </div>
+        
+        <p>如果您对处理结果满意，欢迎给我们评价。如有任何问题，请随时联系我们。</p>
+        
+        <p>
+            <a href="{{.ticket_url}}" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">查看工单详情</a>
+        </p>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+        <p style="font-size: 12px; color: #666;">
+            此邮件由学生服务平台自动发送，请勿直接回复。
+        </p>
+    </div>
+</body>
+</html>`,
+
 		"message_received": `
 <!DOCTYPE html>
 <html>

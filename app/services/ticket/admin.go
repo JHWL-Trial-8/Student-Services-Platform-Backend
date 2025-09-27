@@ -125,7 +125,47 @@ func (s *Service) updateTicketStatusAsAdmin(ctx context.Context, adminUID, ticke
 // ResolveTicket 标记工单为已处理
 func (s *Service) ResolveTicket(ctx context.Context, adminUID, ticketID uint) error {
 	allowed := []dbpkg.TicketStatus{dbpkg.TicketStatusClaimed, dbpkg.TicketStatusInProgress}
-	return s.updateTicketStatusAsAdmin(ctx, adminUID, ticketID, dbpkg.TicketStatusResolved, "ticket.resolve", allowed)
+
+	// 更新状态
+	err := s.updateTicketStatusAsAdmin(ctx, adminUID, ticketID, dbpkg.TicketStatusResolved, "ticket.resolve", allowed)
+	if err != nil {
+		return err
+	}
+
+	// 发送邮件通知（如果配置了notifier）
+	if s.notifier != nil {
+		go func() {
+			// 获取工单和用户信息用于邮件
+			var ticket dbpkg.Ticket
+			var creator dbpkg.User
+			var handler dbpkg.User
+
+			if err := s.db.First(&ticket, ticketID).Error; err != nil {
+				return // 静默失败，不影响主流程
+			}
+
+			if err := s.db.First(&creator, ticket.UserID).Error; err != nil {
+				return
+			}
+
+			if err := s.db.First(&handler, adminUID).Error; err != nil {
+				return
+			}
+
+			// 发送邮件通知
+			s.notifier.NotifyTicketResolved(
+				context.Background(),
+				ticketID,
+				ticket.Title,
+				"您的工单已处理完成", // 默认处理结果消息
+				handler.Name,
+				creator.Email,
+				handler.Email,
+			)
+		}()
+	}
+
+	return nil
 }
 
 // CloseTicket 关闭工单 (负责人或超管)
