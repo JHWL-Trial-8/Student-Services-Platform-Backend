@@ -9,6 +9,8 @@ services:
         GOPROXY: ${GOPROXY:-https://proxy.golang.org,direct}
         USE_CGO: ${USE_CGO:-0}
     image: ${APP_IMAGE:-student-service-backend}:staging
+    volumes:
+      - ./data:/app/data
     env_file:
       - .env.staging
     ports:
