@@ -5,6 +5,10 @@ import (
 	imagesapi "student-services-platform-backend/app/api/images"
 	ticketapi "student-services-platform-backend/app/api/ticket"
 	userapi "student-services-platform-backend/app/api/user"
+
+	adminstatsapi "student-services-platform-backend/app/api/adminstats"
+	cannedapi "student-services-platform-backend/app/api/canned"
+
 	"student-services-platform-backend/app/middleware"
 	"student-services-platform-backend/internal/config"
 	dbpkg "student-services-platform-backend/internal/db"
@@ -21,6 +25,8 @@ func Init(
 	userH *userapi.Handler,
 	ticketH *ticketapi.Handler,
 	imagesH *imagesapi.Handler,
+	adminStatsH *adminstatsapi.Handler,
+	cannedH *cannedapi.Handler,
 ) {
 	authRG := api.Group("/auth")
 	{
@@ -63,5 +69,26 @@ func Init(
 		// 垃圾标记 & 审核
 		ticketsRG.POST("/:id/spam-flag", adminOnly, ticketH.SpamFlag)
 		ticketsRG.POST("/:id/spam-review", superAdminOnly, ticketH.SpamReview)
+	}
+
+	// 管理员：统计（仅限超级管理员）
+	adminRG := api.Group("/admin",
+		middleware.JWTAuth(cfg.JWT.SecretKey),
+		middleware.RequireRole(database, dbpkg.RoleSuperAdmin),
+	)
+	{
+		adminRG.GET("/stats", adminStatsH.Get)
+	}
+
+	// 管理员：常用回复（管理员 + 超级管理员）
+	cannedRG := api.Group("/canned-replies",
+		middleware.JWTAuth(cfg.JWT.SecretKey),
+		middleware.RequireRole(database, dbpkg.RoleAdmin, dbpkg.RoleSuperAdmin),
+	)
+	{
+		cannedRG.GET("", cannedH.List)
+		cannedRG.POST("", cannedH.Create)
+		cannedRG.PUT("/:id", cannedH.Update)
+		cannedRG.DELETE("/:id", cannedH.Delete)
 	}
 }
