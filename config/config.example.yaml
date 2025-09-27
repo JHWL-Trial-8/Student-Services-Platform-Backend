@@ -11,9 +11,9 @@ cors:
   allow_credentials: true
 
 database:
+  # 数据库驱动: postgres | mysql | sqlite
   driver: postgres
   dsn: "postgres://postgres:postgres@localhost:5432/ssp?sslmode=disable"
-  # 连接池
   max_open_conns: 25
   max_idle_conns: 5
   conn_max_lifetime: "30m"
@@ -26,16 +26,20 @@ jwt:
   issuer: "ssp"
   audience: "ssp-web"
 
-# 邮件服务配置
-template email.config.yaml
+# 邮件服务配置示例
 email:
-  smtp_host: "smtp.gmail.com"       # SMTP服务器地址
-  smtp_port: 587                    # SMTP端口 (Gmail: 587, QQ: 587, 163: 25)
-  smtp_username: "your-email@gmail.com"  # SMTP用户名
-  smtp_password: "your-app-password"     # SMTP密码或应用专用密码
-  from_email: "noreply@your-domain.com"  # 发件人邮箱
+  # 主流邮箱服务商SMTP配置
+  # Gmail: smtp.gmail.com:587
+  # QQ邮箱: smtp.qq.com:587
+  # 163邮箱: smtp.163.com:25
+  # Outlook: smtp.outlook.com:587
+  smtp_host: "smtp.qq.com"            # SMTP服务器地址
+  smtp_port: 587                       # SMTP端口
+  smtp_username: "your-email@qq.com"    # 邮箱地址
+  smtp_password: "your-auth-code"       # 邮箱授权码（不是登录密码）
+  from_email: "your-email@qq.com"       # 发件人邮箱（与smtp_username相同）
   from_name: "学生服务平台"               # 发件人姓名
-  tls_enabled: true                      # 是否启用TLS加密
+  tls_enabled: true                      # 启用TLS加密
 
 # Redis配置（用于异步任务队列）
 redis:
@@ -55,4 +59,4 @@ worker:
 
 # 前端配置
 frontend:
-  base_url: "https://your-frontend-domain.com"  # 前端基础URL，用于生成邮件中的链接
+  base_url: "http://localhost:3000"  # 前端基础URL，用于生成邮件中的链接

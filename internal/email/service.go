@@ -2,7 +2,9 @@ package email
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"mime"
 	"net/smtp"
 	"strings"
 
@@ -22,29 +24,40 @@ type Config struct {
 
 // Service 邮件服务
 type Service struct {
-	config         *Config
-	templateEngine *TemplateEngine
+	config            *Config
+	recipientResolver RecipientResolver
 }
 
 // NewService 创建邮件服务
 func NewService(config *Config) *Service {
 	return &Service{
-		config:         config,
-		templateEngine: NewTemplateEngine(),
+		config:            config,
+		recipientResolver: NewDefaultRecipientResolver(config.FromEmail), // 传入发件人邮箱作为默认管理员邮箱
+	}
+}
+
+// NewServiceWithResolver 创建邮件服务（自定义收件人解析器）
+func NewServiceWithResolver(config *Config, resolver RecipientResolver) *Service {
+	return &Service{
+		config:            config,
+		recipientResolver: resolver,
 	}
 }
 
 // SendEmail 发送邮件
 func (s *Service) SendEmail(ctx context.Context, task *worker.EmailTask) error {
+	// 编码中文标题
+	encodedSubject := mime.QEncoding.Encode("UTF-8", task.Subject)
+
 	// 构建邮件头
 	headers := make(map[string]string)
 	headers["From"] = fmt.Sprintf("%s <%s>", s.config.FromName, s.config.FromEmail)
 	headers["To"] = strings.Join(task.To, ", ")
-	headers["Subject"] = task.Subject
+	headers["Subject"] = encodedSubject
 	headers["MIME-Version"] = "1.0"
 	headers["Content-Type"] = "text/html; charset=UTF-8"
 
-	// 构建邮件内容
+	// 构建邮件内容（不使用Base64编码）
 	message := ""
 	for k, v := range headers {
 		message += fmt.Sprintf("%s: %s\r\n", k, v)
@@ -52,12 +65,80 @@ func (s *Service) SendEmail(ctx context.Context, task *worker.EmailTask) error {
 	message += "\r\n" + task.Body
 
 	// 发送邮件
-	auth := smtp.PlainAuth("", s.config.SMTPUsername, s.config.SMTPPassword, s.config.SMTPHost)
 	addr := fmt.Sprintf("%s:%d", s.config.SMTPHost, s.config.SMTPPort)
 
-	err := smtp.SendMail(addr, auth, s.config.FromEmail, task.To, []byte(message))
+	// 根据端口和TLS配置选择发送方式
+	if s.config.SMTPPort == 465 || !s.config.TLSEnabled {
+		// 使用SSL连接（465端口）或不使用TLS
+		err := s.sendMailSSL(addr, s.config.SMTPUsername, s.config.SMTPPassword, s.config.FromEmail, task.To, []byte(message))
+		if err != nil {
+			return fmt.Errorf("SMTP发送失败: %w", err)
+		}
+	} else {
+		// 使用STARTTLS（587端口）
+		auth := smtp.PlainAuth("", s.config.SMTPUsername, s.config.SMTPPassword, s.config.SMTPHost)
+		err := smtp.SendMail(addr, auth, s.config.FromEmail, task.To, []byte(message))
+		if err != nil {
+			return fmt.Errorf("SMTP发送失败: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// sendMailSSL 使用SSL连接发送邮件（适用于465端口）
+func (s *Service) sendMailSSL(addr, username, password, from string, to []string, msg []byte) error {
+	// 创建TLS连接
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: false,
+		ServerName:         s.config.SMTPHost,
+	}
+
+	conn, err := tls.Dial("tcp", addr, tlsConfig)
 	if err != nil {
-		return fmt.Errorf("SMTP发送失败: %w", err)
+		return fmt.Errorf("TLS连接失败: %w", err)
+	}
+	defer conn.Close()
+
+	// 创建SMTP客户端
+	client, err := smtp.NewClient(conn, s.config.SMTPHost)
+	if err != nil {
+		return fmt.Errorf("创建SMTP客户端失败: %w", err)
+	}
+	defer client.Close()
+
+	// 身份验证
+	auth := smtp.PlainAuth("", username, password, s.config.SMTPHost)
+	if err = client.Auth(auth); err != nil {
+		return fmt.Errorf("SMTP身份验证失败: %w", err)
+	}
+
+	// 设置发件人
+	if err = client.Mail(from); err != nil {
+		return fmt.Errorf("设置发件人失败: %w", err)
+	}
+
+	// 设置收件人
+	for _, recipient := range to {
+		if err = client.Rcpt(recipient); err != nil {
+			return fmt.Errorf("设置收件人失败: %w", err)
+		}
+	}
+
+	// 发送邮件内容
+	wc, err := client.Data()
+	if err != nil {
+		return fmt.Errorf("开始发送邮件数据失败: %w", err)
+	}
+
+	_, err = wc.Write(msg)
+	if err != nil {
+		return fmt.Errorf("写入邮件数据失败: %w", err)
+	}
+
+	err = wc.Close()
+	if err != nil {
+		return fmt.Errorf("关闭邮件数据流失败: %w", err)
 	}
 
 	return nil
@@ -65,14 +146,31 @@ func (s *Service) SendEmail(ctx context.Context, task *worker.EmailTask) error {
 
 // SendTemplateEmail 发送模板邮件
 func (s *Service) SendTemplateEmail(ctx context.Context, task *worker.EmailTask) error {
-	// 渲染邮件模板
-	renderedBody, err := s.templateEngine.Render(string(task.Type), task.Context)
+	// 简化实现：直接发送邮件，不使用模板
+	return s.SendEmail(ctx, task)
+}
+
+// SendEmailWithDynamicRecipients 发送邮件（动态确定收件人）
+func (s *Service) SendEmailWithDynamicRecipients(ctx context.Context, emailType worker.EmailType, subject, body string, emailContext map[string]interface{}) error {
+	// 解析收件人
+	recipients, err := s.recipientResolver.ResolveRecipients(ctx, emailType, emailContext)
 	if err != nil {
-		return fmt.Errorf("渲染邮件模板失败: %w", err)
+		return fmt.Errorf("解析收件人失败: %w", err)
 	}
 
-	// 更新任务的邮件内容
-	task.Body = renderedBody
+	if len(recipients) == 0 {
+		return fmt.Errorf("没有找到有效的收件人")
+	}
+
+	// 创建邮件任务
+	task := &worker.EmailTask{
+		To:       recipients,
+		Subject:  subject,
+		Body:     body,
+		Type:     emailType,
+		Priority: worker.EmailPriorityNormal,
+		Context:  emailContext,
+	}
 
 	// 发送邮件
 	return s.SendEmail(ctx, task)

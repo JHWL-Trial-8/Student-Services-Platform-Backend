@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/hibiken/asynq"
 )
@@ -47,6 +48,11 @@ func (h *EmailHandler) HandleEmailTask(ctx context.Context, t *asynq.Task) error
 
 	if err != nil {
 		log.Printf("邮件发送失败: %v", err)
+		// 对于某些类型的错误，不进行重试
+		if isNonRetryableError(err) {
+			log.Printf("不可重试的错误，放弃任务: %v", err)
+			return asynq.SkipRetry // 跳过重试，直接失败
+		}
 		return fmt.Errorf("邮件发送失败: %w", err)
 	}
 
@@ -72,4 +78,19 @@ func (h *EmailHandler) needsTemplate(emailType EmailType) bool {
 	}
 
 	return templateTypes[emailType]
+}
+
+// isNonRetryableError 判断是否为不可重试的错误
+func isNonRetryableError(err error) bool {
+	errorMsg := err.Error()
+	// 认证相关错误不重试
+	if strings.Contains(errorMsg, "535 authentication failed") {
+		return true
+	}
+	// 邮箱不存在
+	if strings.Contains(errorMsg, "550 mailbox unavailable") {
+		return true
+	}
+	// 其他不可恢复的错误可以在这里添加
+	return false
 }

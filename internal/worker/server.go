@@ -24,9 +24,11 @@ func NewServer(redisAddr string, concurrency int) *Server {
 				"default":  3, // 默认队列
 				"low":      1, // 低优先级队列
 			},
-			// 错误重试策略
+			// 错误重试策略 - 不重试，一次失败直接放弃
 			RetryDelayFunc: func(n int, err error, task *asynq.Task) time.Duration {
-				return time.Duration(n) * time.Second
+				// 不重试，直接失败
+				log.Printf("任务 %s 失败，不重试：%v", task.Type(), err)
+				return 0 // 返回0表示不重试
 			},
 			// 日志配置
 			Logger: nil, // 使用 asynq 默认日志器
