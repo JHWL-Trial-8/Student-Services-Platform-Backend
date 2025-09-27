@@ -1,33 +1,4 @@
-server:
-  # "debug"、"release" 或 "test"
-  mode: debug
-  # 监听的端口
-  port: "8080"
-
-cors:
-  allowed_origins: ["*"]
-  allowed_methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
-  allowed_headers: ["Authorization", "Content-Type", "X-Requested-With"]
-  allow_credentials: true
-
-database:
-  driver: postgres
-  dsn: "postgres://postgres:postgres@localhost:5432/ssp?sslmode=disable"
-  # 连接池
-  max_open_conns: 25
-  max_idle_conns: 5
-  conn_max_lifetime: "30m"
-  # GORM 日志级别: silent | error | warn | info
-  log_level: "warn"
-
-jwt:
-  secret_key: "change-me-in-env"
-  access_token_exp: "1h"
-  issuer: "ssp"
-  audience: "ssp-web"
-
-# 邮件服务配置
-template email.config.yaml
+# 邮件服务配置示例
 email:
   smtp_host: "smtp.gmail.com"       # SMTP服务器地址
   smtp_port: 587                    # SMTP端口 (Gmail: 587, QQ: 587, 163: 25)

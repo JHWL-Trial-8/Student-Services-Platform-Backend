@@ -7,6 +7,37 @@ import (
 	"github.com/spf13/viper"
 )
 
+// EmailConfig 邮件服务配置
+type EmailConfig struct {
+	SMTPHost     string `mapstructure:"smtp_host"`
+	SMTPPort     int    `mapstructure:"smtp_port"`
+	SMTPUsername string `mapstructure:"smtp_username"`
+	SMTPPassword string `mapstructure:"smtp_password"`
+	FromEmail    string `mapstructure:"from_email"`
+	FromName     string `mapstructure:"from_name"`
+	TLSEnabled   bool   `mapstructure:"tls_enabled"`
+}
+
+// RedisConfig Redis配置
+type RedisConfig struct {
+	Addr     string `mapstructure:"addr"`
+	Password string `mapstructure:"password"`
+	DB       int    `mapstructure:"db"`
+}
+
+// WorkerConfig Worker配置
+type WorkerConfig struct {
+	Concurrency int            `mapstructure:"concurrency"`
+	Queues      map[string]int `mapstructure:"queues"`
+	RetryDelay  string         `mapstructure:"retry_delay"`
+	MaxRetry    int            `mapstructure:"max_retry"`
+}
+
+// FrontendConfig 前端配置
+type FrontendConfig struct {
+	BaseURL string `mapstructure:"base_url"`
+}
+
 type ServerConfig struct {
 	// "8080"
 	Port string `mapstructure:"port"`
@@ -50,6 +81,10 @@ type Config struct {
 	CORS     CORSConfig     `mapstructure:"cors"`
 	Database DatabaseConfig `mapstructure:"database"`
 	JWT      JWTConfig      `mapstructure:"jwt"`
+	Email    EmailConfig    `mapstructure:"email"`
+	Redis    RedisConfig    `mapstructure:"redis"`
+	Worker   WorkerConfig   `mapstructure:"worker"`
+	Frontend FrontendConfig `mapstructure:"frontend"`
 }
 
 func defaults(v *viper.Viper) {
