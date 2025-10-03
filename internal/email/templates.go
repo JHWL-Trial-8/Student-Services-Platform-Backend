@@ -189,6 +189,108 @@ func (e *TemplateEngine) loadBuiltinTemplates() {
     </div>
 </body>
 </html>`,
+
+		"user_created": `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>新用户注册通知</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #6f42c1;">👤 新用户注册通知</h2>
+        <p>尊敬的管理员，</p>
+        <p>有新用户注册了学生服务平台：</p>
+        
+        <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <p><strong>用户姓名：</strong>{{.user_name}}</p>
+            <p><strong>用户邮箱：</strong>{{.user_email}}</p>
+            <p><strong>用户角色：</strong>{{.user_role}}</p>
+            <p><strong>注册时间：</strong>{{.created_at}}</p>
+        </div>
+        
+        <p>请关注新用户的使用情况，必要时提供帮助。</p>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+        <p style="font-size: 12px; color: #666;">
+            此邮件由学生服务平台自动发送，请勿直接回复。
+        </p>
+    </div>
+</body>
+</html>`,
+
+		"password_reset": `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>密码重置通知</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #dc3545;">🔒 密码重置请求</h2>
+        <p>亲爱的 {{.user_name}}，</p>
+        <p>我们收到了您的密码重置请求。</p>
+        
+        <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <p><strong>请求时间：</strong>{{.request_time}}</p>
+        </div>
+        
+        <div style="background: #fff3cd; padding: 15px; margin: 20px 0; border-radius: 5px; border: 1px solid #ffeaa7;">
+            <p><strong>重置代码：</strong></p>
+            <p style="font-size: 24px; font-weight: bold; color: #856404; text-align: center; background: #f1f1f1; padding: 10px; border-radius: 5px; letter-spacing: 2px;">{{.reset_token}}</p>
+            <p style="color: #856404;"><em>此代码10分钟内有效。</em></p>
+        </div>
+        
+        <div style="background: #f8d7da; padding: 15px; margin: 20px 0; border-radius: 5px; border: 1px solid #f5c6cb;">
+            <p style="color: #721c24; margin: 0;"><strong>安全提示：</strong>如果这不是您的操作，请忽略此邮件并立即联系管理员。</p>
+        </div>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+        <p style="font-size: 12px; color: #666;">
+            此邮件由学生服务平台自动发送，请勿直接回复。
+        </p>
+    </div>
+</body>
+</html>`,
+
+		"system_maintenance": `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>系统维护通知</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #fd7e14;">🔧 系统维护通知</h2>
+        <p>尊敬的用户，</p>
+        <p>为了提供更好的服务，我们将进行系统维护：</p>
+        
+        <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <p><strong>维护标题：</strong>{{.title}}</p>
+            <p><strong>维护级别：</strong>{{.maintenance_level}}</p>
+            <p><strong>开始时间：</strong>{{.start_time}}</p>
+            <p><strong>结束时间：</strong>{{.end_time}}</p>
+        </div>
+        
+        <div style="background: #e7f3ff; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #007bff;">
+            <h3 style="margin-top: 0; color: #004085;">维护说明：</h3>
+            <p style="margin-bottom: 0;">{{.description}}</p>
+        </div>
+        
+        <div style="background: #fff3cd; padding: 15px; margin: 20px 0; border-radius: 5px; border: 1px solid #ffeaa7;">
+            <p style="color: #856404; margin: 0;"><strong>温馨提示：</strong>维护期间可能会影响系统使用，给您带来不便敬请谅解。</p>
+        </div>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+        <p style="font-size: 12px; color: #666;">
+            此邮件由学生服务平台自动发送，请勿直接回复。
+        </p>
+    </div>
+</body>
+</html>`,
 	}
 
 	for name, content := range templates {
