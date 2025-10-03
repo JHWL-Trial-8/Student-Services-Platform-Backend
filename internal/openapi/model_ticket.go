@@ -31,7 +31,7 @@ type Ticket struct {
 
 	Status TicketStatus `json:"status,omitempty"`
 
-	AssignedAdminId *int32 `json:"assigned_admin_id,omitempty"`
+	AssignedAdminId *int32 `json:"assigned_admin_id"`
 
 	ClaimedAt *time.Time `json:"claimed_at,omitempty"`
 
