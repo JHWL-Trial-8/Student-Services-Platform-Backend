@@ -2,6 +2,7 @@ package router
 
 import (
 	authapi "student-services-platform-backend/app/api/auth"
+	adminuserapi "student-services-platform-backend/app/api/adminuser"
 	imagesapi "student-services-platform-backend/app/api/images"
 	ticketapi "student-services-platform-backend/app/api/ticket"
 	userapi "student-services-platform-backend/app/api/user"
@@ -27,6 +28,7 @@ func Init(
 	imagesH *imagesapi.Handler,
 	adminStatsH *adminstatsapi.Handler,
 	cannedH *cannedapi.Handler,
+	adminUserH *adminuserapi.Handler,
 ) {
 	authRG := api.Group("/auth")
 	{
@@ -38,6 +40,19 @@ func Init(
 	{
 		userRG.GET("/me", middleware.JWTAuth(cfg.JWT.SecretKey), userH.GetMe)
 		userRG.PUT("/me", middleware.JWTAuth(cfg.JWT.SecretKey), userH.UpdateMe)
+	}
+
+	// 管理员：用户管理（仅限超级管理员）
+	adminUserRG := api.Group("/users",
+		middleware.JWTAuth(cfg.JWT.SecretKey),
+		middleware.RequireRole(database, dbpkg.RoleSuperAdmin),
+	)
+	{
+		adminUserRG.GET("", adminUserH.ListUsers)
+		adminUserRG.POST("", adminUserH.CreateUser)
+		adminUserRG.GET("/:id", adminUserH.GetUser)
+		adminUserRG.PUT("/:id", adminUserH.UpdateUser)
+		adminUserRG.DELETE("/:id", adminUserH.DeleteUser)
 	}
 
 	// 图片端点（需要认证）

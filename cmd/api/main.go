@@ -8,6 +8,7 @@ import (
     "github.com/gin-gonic/gin"
 
     // API Handlers
+    adminuserapi "student-services-platform-backend/app/api/adminuser"
     authapi "student-services-platform-backend/app/api/auth"
     imagesapi "student-services-platform-backend/app/api/images"
     ticketapi "student-services-platform-backend/app/api/ticket"
@@ -19,6 +20,7 @@ import (
     "student-services-platform-backend/app/router"
     
     // Services
+    adminusersvc "student-services-platform-backend/app/services/adminuser"
     authsvc "student-services-platform-backend/app/services/auth"
     imagessvc "student-services-platform-backend/app/services/images"
     ticketsvc "student-services-platform-backend/app/services/ticket"
@@ -64,6 +66,7 @@ func main() {
     imagesH := imagesapi.New(imagessvc.NewService(database, store))
     adminStatsH := adminstatsapi.New(adminstatssvc.NewService(database))
     cannedH := cannedapi.New(cannedsvc.NewService(database))
+    adminUserH := adminuserapi.New(adminusersvc.NewService(database))
     
     r := gin.New()
     r.Use(gin.Logger(), gin.Recovery(), httpserver.CORS(cfg.CORS))
@@ -73,7 +76,7 @@ func main() {
         api.GET("/healthz", func(c *gin.Context) {
             c.JSON(http.StatusOK, gin.H{"ok": true, "ts": time.Now().UTC().Format(time.RFC3339)})
         })
-        router.Init(api, cfg, database, authH, userH, ticketH, imagesH, adminStatsH, cannedH)
+        router.Init(api, cfg, database, authH, userH, ticketH, imagesH, adminStatsH, cannedH, adminUserH)
     }
 
     log.Printf("listening on :%s (mode=%s)", cfg.Server.Port, gin.Mode())

@@ -40,3 +40,36 @@ func ExistsOtherUserWithEmail(d *gorm.DB, email string, excludeID uint) (bool, e
 func UpdateUser(d *gorm.DB, u *User) error {
 	return d.Save(u).Error
 }
+
+// DeleteUser deletes a user by ID
+func DeleteUser(d *gorm.DB, id uint) error {
+	return d.Delete(&User{}, id).Error
+}
+
+// ListUsers retrieves users with pagination and optional role filtering
+func ListUsers(d *gorm.DB, page, pageSize int, role *Role) ([]User, int64, error) {
+	var users []User
+	var total int64
+	
+	query := d.Model(&User{})
+	
+	// Apply role filter if provided
+	if role != nil {
+		query = query.Where("role = ?", *role)
+	}
+	
+	// Get total count
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	
+	// Apply pagination
+	if err := query.Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Order("created_at DESC").
+		Find(&users).Error; err != nil {
+		return nil, 0, err
+	}
+	
+	return users, total, nil
+}
