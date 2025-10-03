@@ -1,6 +1,7 @@
 package ticket
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -87,6 +88,54 @@ func (s *Service) PostMessage(currentUID, ticketID uint, body string, isInternal
 	}
 	if err := s.db.Create(m).Error; err != nil {
 		return nil, err
+	}
+
+	// 发送邮件通知（如果配置了notifier）
+	if s.notifier != nil {
+		go func() {
+			// 获取发送者和接收者信息用于邮件
+			var sender dbpkg.User
+			var creator dbpkg.User
+			var handler dbpkg.User
+
+			if err := s.db.First(&sender, currentUID).Error; err != nil {
+				return // 静默失败，不影响主流程
+			}
+
+			if err := s.db.First(&creator, t.UserID).Error; err != nil {
+				return
+			}
+
+			// 如果工单有处理人，获取处理人信息
+			if t.AssignedAdminID != nil {
+				if err := s.db.First(&handler, *t.AssignedAdminID).Error; err != nil {
+					return
+				}
+			}
+
+			// 确定收件人
+			var recipientEmail string
+			
+			// 如果当前用户是学生，通知处理人
+			if !isAdmin(u.Role) && t.AssignedAdminID != nil {
+				recipientEmail = handler.Email
+			} else if isAdmin(u.Role) {
+				// 如果当前用户是管理员，通知学生
+				recipientEmail = creator.Email
+			}
+
+			if recipientEmail != "" {
+				// 发送新消息通知
+				s.notifier.NotifyNewMessage(
+					context.Background(),
+					t.ID,
+					sender.Name,
+					body,
+					creator.Email,
+					handler.Email,
+				)
+			}
+		}()
 	}
 
 	out := &openapi.TicketMessage{

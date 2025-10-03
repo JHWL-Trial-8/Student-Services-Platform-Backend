@@ -11,9 +11,9 @@ cors:
   allow_credentials: true
 
 database:
+  # 数据库驱动: postgres | mysql | sqlite
   driver: postgres
   dsn: "postgres://postgres:postgres@localhost:5432/ssp?sslmode=disable"
-  # 连接池
   max_open_conns: 25
   max_idle_conns: 5
   conn_max_lifetime: "30m"
@@ -28,3 +28,38 @@ jwt:
 
 filestore:
   root: "data"
+
+# 邮件服务配置示例
+email:
+  # 主流邮箱服务商SMTP配置
+  # Gmail: smtp.gmail.com:587
+  # QQ邮箱: smtp.qq.com:587
+  # 163邮箱: smtp.163.com:25
+  # Outlook: smtp.outlook.com:587
+  smtp_host: "smtp.qq.com"            # SMTP服务器地址
+  smtp_port: 587                       # SMTP端口
+  smtp_username: "your-email@qq.com"    # 邮箱地址
+  smtp_password: "your-auth-code"       # 邮箱授权码（不是登录密码）
+  from_email: "your-email@qq.com"       # 发件人邮箱（与smtp_username相同）
+  from_name: "学生服务平台"               # 发件人姓名
+  tls_enabled: true                      # 启用TLS加密
+
+# Redis配置（用于异步任务队列）
+redis:
+  addr: "localhost:6379"    # Redis地址
+  password: ""              # Redis密码（如果有）
+  db: 0                     # Redis数据库编号
+
+# 异步任务配置
+worker:
+  concurrency: 10           # 并发worker数量
+  queues:
+    critical: 6             # 紧急队列权重
+    default: 3              # 默认队列权重
+    low: 1                  # 低优先级队列权重
+  retry_delay: "1s"         # 重试延迟
+  max_retry: 3              # 最大重试次数
+
+# 前端配置
+frontend:
+  base_url: "http://localhost:3000"  # 前端基础URL，用于生成邮件中的链接

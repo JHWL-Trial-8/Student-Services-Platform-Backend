@@ -1,6 +1,7 @@
 package ticket
 
 import (
+	"context"
 	"sort"
 	"strings"
 	"time"
@@ -93,6 +94,26 @@ func (s *Service) CreateTicket(userID uint, in openapi.TicketCreate) (*openapi.T
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	// 发送邮件通知（如果配置了notifier）
+	if s.notifier != nil {
+		go func() {
+			// 获取用户信息用于邮件
+			var user dbpkg.User
+			if err := s.db.First(&user, userID).Error; err != nil {
+				return // 静默失败，不影响主流程
+			}
+
+			// 发送工单创建通知
+			s.notifier.NotifyTicketCreated(
+				context.Background(),
+				created.ID,
+				created.Title,
+				created.Category,
+				user.Name,
+			)
+		}()
 	}
 
 	// 查询最终 image_ids（保证返回的是数据库状态）

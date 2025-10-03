@@ -1,18 +1,39 @@
 package ticket
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	dbpkg "student-services-platform-backend/internal/db"
+
 	"gorm.io/gorm"
 )
 
-// Service 封装工单领域逻辑
-type Service struct {
-	db *gorm.DB
+// EmailNotifier 邮件通知接口
+type EmailNotifier interface {
+	NotifyTicketCreated(ctx context.Context, ticketID uint, title, category, creatorName string) error
+	NotifyTicketResolved(ctx context.Context, ticketID uint, title, resolution, handlerName, creatorEmail, handlerEmail string) error
+	NotifyTicketClaimed(ctx context.Context, ticketID uint, title, handlerName, creatorEmail string) error
+	NotifyNewMessage(ctx context.Context, ticketID uint, senderName, message, creatorEmail, handlerEmail string) error
 }
 
-func NewService(db *gorm.DB) *Service { return &Service{db: db} }
+// Service 封装工单领域逻辑
+type Service struct {
+	db       *gorm.DB
+	notifier EmailNotifier // 邮件通知器（可选）
+}
+
+func NewService(db *gorm.DB) *Service {
+	return &Service{db: db}
+}
+
+// NewServiceWithNotifier 创建带邮件通知的服务
+func NewServiceWithNotifier(db *gorm.DB, notifier EmailNotifier) *Service {
+	return &Service{
+		db:       db,
+		notifier: notifier,
+	}
+}
 
 // ---- 共享错误类型 ----
 

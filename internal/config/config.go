@@ -7,6 +7,22 @@ import (
 	"github.com/spf13/viper"
 )
 
+// EmailConfig 邮件服务配置
+type EmailConfig struct {
+	SMTPHost     string `mapstructure:"smtp_host"`
+	SMTPPort     int    `mapstructure:"smtp_port"`
+	SMTPUsername string `mapstructure:"smtp_username"`
+	SMTPPassword string `mapstructure:"smtp_password"`
+	FromEmail    string `mapstructure:"from_email"`
+	FromName     string `mapstructure:"from_name"`
+	TLSEnabled   bool   `mapstructure:"tls_enabled"`
+}
+
+// FrontendConfig 前端配置
+type FrontendConfig struct {
+	BaseURL string `mapstructure:"base_url"`
+}
+
 type ServerConfig struct {
 	// "8080"
 	Port string `mapstructure:"port"`
@@ -57,7 +73,9 @@ type Config struct {
 	CORS      CORSConfig      `mapstructure:"cors"`
 	Database  DatabaseConfig  `mapstructure:"database"`
 	JWT       JWTConfig       `mapstructure:"jwt"`
+	Email     EmailConfig     `mapstructure:"email"`
 	FileStore FileStoreConfig `mapstructure:"filestore"`
+	Frontend  FrontendConfig  `mapstructure:"frontend"`
 }
 
 func defaults(v *viper.Viper) {
@@ -82,6 +100,18 @@ func defaults(v *viper.Viper) {
 	v.SetDefault("jwt.audience", "ssp-web")
 
 	v.SetDefault("filestore.root", "data")
+
+	// 邮件配置默认值
+	v.SetDefault("email.smtp_host", "")
+	v.SetDefault("email.smtp_port", 587)
+	v.SetDefault("email.smtp_username", "")
+	v.SetDefault("email.smtp_password", "")
+	v.SetDefault("email.from_email", "")
+	v.SetDefault("email.from_name", "学生服务平台")
+	v.SetDefault("email.tls_enabled", true)
+
+	// 前端配置默认值
+	v.SetDefault("frontend.base_url", "http://localhost:3000")
 }
 
 // Load 从以下位置返回一个配置（按优先级顺序）：
