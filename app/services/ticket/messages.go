@@ -77,7 +77,7 @@ func (s *Service) PostMessage(currentUID, ticketID uint, body string, isInternal
 		return nil, &ErrForbidden{Reason: "student cannot post internal note"}
 	}
 
-	now := time.Now()
+	now := time.Now().UTC().Truncate(time.Microsecond)
 	m := &dbpkg.TicketMessage{
 		TicketID:       t.ID,
 		SenderUserID:   currentUID,

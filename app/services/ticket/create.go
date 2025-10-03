@@ -67,7 +67,7 @@ func (s *Service) CreateTicket(userID uint, in openapi.TicketCreate) (*openapi.T
 		}
 
 		// 创建 Ticket（默认 NEW）
-		now := time.Now()
+		now := time.Now().UTC().Truncate(time.Microsecond)
 		t := &dbpkg.Ticket{
 			UserID:      userID,
 			Title:       strings.TrimSpace(in.Title),

@@ -46,7 +46,7 @@ func (s *Service) RateTicket(currentUID, ticketID uint, stars int, comment strin
 	}
 
 	// 写入评分（依赖唯一索引 ticket_id 保证并发安全）
-	now := time.Now()
+	now := time.Now().UTC().Truncate(time.Microsecond)
 	r := &dbpkg.Rating{
 		TicketID: ticketID,
 		UserID:   currentUID,

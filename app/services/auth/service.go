@@ -146,8 +146,8 @@ func (s *Service) generateAccessToken(u *dbpkg.User) (*struct {
 	subject := strconv.Itoa(int(apiUser.Id))
 	claims := jwt.RegisteredClaims{
 		Subject:   subject,
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.cfg.AccessTokenExp)),
+		IssuedAt:  jwt.NewNumericDate(time.Now().UTC().Truncate(time.Microsecond)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Truncate(time.Microsecond).Add(s.cfg.AccessTokenExp)),
 		Issuer:    s.cfg.Issuer,
 		Audience:  []string{s.cfg.Audience},
 	}

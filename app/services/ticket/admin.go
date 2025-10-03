@@ -31,7 +31,7 @@ func (s *Service) audit(ctx context.Context, tx *gorm.DB, actorID uint, action, 
 		Entity:      entity,
 		EntityID:    entityID,
 		Diff:        diffJSON,
-		CreatedAt:   time.Now().UTC(),
+		CreatedAt:   time.Now().UTC().Truncate(time.Microsecond),
 	}
 	return tx.WithContext(ctx).Create(al).Error
 }
@@ -39,7 +39,7 @@ func (s *Service) audit(ctx context.Context, tx *gorm.DB, actorID uint, action, 
 // ClaimTicket 管理员接单（原子 CAS）
 func (s *Service) ClaimTicket(ctx context.Context, adminUID, ticketID uint) error {
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		now := time.Now().UTC()
+		now := time.Now().UTC().Truncate(time.Microsecond)
 		result := tx.Model(&dbpkg.Ticket{}).
 			Where("id = ? AND status = ?", ticketID, dbpkg.TicketStatusNew).
 			Updates(map[string]interface{}{
@@ -75,7 +75,7 @@ func (s *Service) UnclaimTicket(ctx context.Context, adminUID, ticketID uint) er
 				"assigned_admin_id": gorm.Expr("NULL"),
 				"status":            dbpkg.TicketStatusNew,
 				"claimed_at":        gorm.Expr("NULL"),
-				"updated_at":        time.Now().UTC(),
+				"updated_at":        time.Now().UTC().Truncate(time.Microsecond),
 			})
 		if result.Error != nil {
 			return result.Error
@@ -102,7 +102,7 @@ func (s *Service) updateTicketStatusAsAdmin(ctx context.Context, adminUID, ticke
 			Where("id = ? AND assigned_admin_id = ? AND status IN ?", ticketID, adminUID, allowedOldStatuses).
 			Updates(map[string]interface{}{
 				"status":     newStatus,
-				"updated_at": time.Now().UTC(),
+				"updated_at": time.Now().UTC().Truncate(time.Microsecond),
 			})
 		if result.Error != nil {
 			return result.Error
@@ -224,7 +224,7 @@ func (s *Service) SpamReview(ctx context.Context, superAdminUID, ticketID uint, 
 		if res.RowsAffected == 0 {
 			return &ErrInvalidState{Message: "仅 'SPAM_PENDING' 状态的工单可审核"}
 		}
-		now := time.Now().UTC()
+		now := time.Now().UTC().Truncate(time.Microsecond)
 		if err := tx.Model(&dbpkg.SpamFlag{}).Where("ticket_id = ?", ticketID).Updates(map[string]interface{}{
 			"status": spamStatus, "reviewed_by_super_admin_id": superAdminUID, "reviewed_at": &now}).Error; err != nil {
 			return err
