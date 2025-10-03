@@ -18,6 +18,21 @@ type EmailConfig struct {
 	TLSEnabled   bool   `mapstructure:"tls_enabled"`
 }
 
+// RedisConfig Redis配置
+type RedisConfig struct {
+	Addr     string `mapstructure:"addr"`
+	Password string `mapstructure:"password"`
+	DB       int    `mapstructure:"db"`
+}
+
+// WorkerConfig Worker配置
+type WorkerConfig struct {
+	Concurrency int            `mapstructure:"concurrency"`
+	Queues      map[string]int `mapstructure:"queues"`
+	RetryDelay  string         `mapstructure:"retry_delay"`
+	MaxRetry    int            `mapstructure:"max_retry"`
+}
+
 // FrontendConfig 前端配置
 type FrontendConfig struct {
 	BaseURL string `mapstructure:"base_url"`
@@ -74,6 +89,8 @@ type Config struct {
 	Database  DatabaseConfig  `mapstructure:"database"`
 	JWT       JWTConfig       `mapstructure:"jwt"`
 	Email     EmailConfig     `mapstructure:"email"`
+	Redis     RedisConfig     `mapstructure:"redis"`
+	Worker    WorkerConfig    `mapstructure:"worker"`
 	FileStore FileStoreConfig `mapstructure:"filestore"`
 	Frontend  FrontendConfig  `mapstructure:"frontend"`
 }
@@ -109,6 +126,20 @@ func defaults(v *viper.Viper) {
 	v.SetDefault("email.from_email", "")
 	v.SetDefault("email.from_name", "学生服务平台")
 	v.SetDefault("email.tls_enabled", true)
+	v.SetDefault("email.templates_path", "./templates/email")
+
+	// Redis配置默认值
+	v.SetDefault("redis.addr", "localhost:6379")
+	v.SetDefault("redis.password", "")
+	v.SetDefault("redis.db", 0)
+
+	// Worker配置默认值
+	v.SetDefault("worker.concurrency", 10)
+	v.SetDefault("worker.queues.critical", 6)
+	v.SetDefault("worker.queues.default", 3)
+	v.SetDefault("worker.queues.low", 1)
+	v.SetDefault("worker.retry_delay", "1s")
+	v.SetDefault("worker.max_retry", 3)
 
 	// 前端配置默认值
 	v.SetDefault("frontend.base_url", "http://localhost:3000")

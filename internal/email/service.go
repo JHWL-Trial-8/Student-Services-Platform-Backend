@@ -147,8 +147,24 @@ func (s *Service) sendMailSSL(addr, username, password, from string, to []string
 	return nil
 }
 
-// SendTemplateEmail 发送模板邮件
-func (s *Service) SendTemplateEmail(ctx context.Context, emailType string, context map[string]interface{}) error {
+// SendTemplateEmail 发送模板邮件（符合worker接口要求）
+func (s *Service) SendTemplateEmail(ctx context.Context, task *worker.EmailTask) error {
+	// 渲染模板
+	templateBody, err := s.templateEngine.Render(string(task.Type), task.Context)
+	if err != nil {
+		return fmt.Errorf("模板渲染失败: %w", err)
+	}
+
+	// 创建新的任务，使用渲染后的内容
+	templateTask := *task // 复制任务
+	templateTask.Body = templateBody
+
+	// 发送邮件
+	return s.SendEmail(ctx, &templateTask)
+}
+
+// SendTemplateEmailWithContext 发送模板邮件（使用上下文参数）
+func (s *Service) SendTemplateEmailWithContext(ctx context.Context, emailType string, context map[string]interface{}) error {
 	// 渲染模板
 	templateBody, err := s.templateEngine.Render(emailType, context)
 	if err != nil {
