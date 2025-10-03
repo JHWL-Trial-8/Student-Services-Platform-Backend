@@ -9,13 +9,14 @@ import (
 
 // EmailConfig 邮件服务配置
 type EmailConfig struct {
-	SMTPHost     string `mapstructure:"smtp_host"`
-	SMTPPort     int    `mapstructure:"smtp_port"`
-	SMTPUsername string `mapstructure:"smtp_username"`
-	SMTPPassword string `mapstructure:"smtp_password"`
-	FromEmail    string `mapstructure:"from_email"`
-	FromName     string `mapstructure:"from_name"`
-	TLSEnabled   bool   `mapstructure:"tls_enabled"`
+	SMTPHost      string `mapstructure:"smtp_host"`
+	SMTPPort      int    `mapstructure:"smtp_port"`
+	SMTPUsername  string `mapstructure:"smtp_username"`
+	SMTPPassword  string `mapstructure:"smtp_password"`
+	FromEmail     string `mapstructure:"from_email"`
+	FromName      string `mapstructure:"from_name"`
+	TLSEnabled    bool   `mapstructure:"tls_enabled"`
+	TemplatesPath string `mapstructure:"templates_path"`
 }
 
 // RedisConfig Redis配置

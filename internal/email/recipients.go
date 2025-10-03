@@ -54,10 +54,7 @@ func (r *DefaultRecipientResolver) ResolveRecipients(ctx context.Context, emailT
 func (r *DefaultRecipientResolver) resolveTicketCreatedRecipients(ctx context.Context, emailContext map[string]interface{}) ([]string, error) {
 	// 简化设计：所有工单都通知同一个管理员邮箱
 	// 如果需要更复杂的分配逻辑，可以自定义RecipientResolver
-	if r.defaultAdminEmail != "" {
-		return []string{r.defaultAdminEmail}, nil
-	}
-	return nil, fmt.Errorf("未配置管理员邮箱")
+	return []string{r.defaultAdminEmail}, nil
 }
 
 // resolveTicketClaimedRecipients 工单被接单时的收件人（通知创建者）

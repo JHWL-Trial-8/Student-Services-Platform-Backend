@@ -13,24 +13,26 @@ import (
 
 // 独立的worker进程示例
 
-// 独立的worker进程示例
-
 func main() {
 	// 加载配置
 	cfg := config.MustLoad()
 
 	// 创建邮件服务
 	emailConfig := &email.Config{
-		SMTPHost:     cfg.Email.SMTPHost,
-		SMTPPort:     cfg.Email.SMTPPort,
-		SMTPUsername: cfg.Email.SMTPUsername,
-		SMTPPassword: cfg.Email.SMTPPassword,
-		FromEmail:    cfg.Email.FromEmail,
-		FromName:     cfg.Email.FromName,
-		TLSEnabled:   cfg.Email.TLSEnabled,
+		SMTPHost:      cfg.Email.SMTPHost,
+		SMTPPort:      cfg.Email.SMTPPort,
+		SMTPUsername:  cfg.Email.SMTPUsername,
+		SMTPPassword:  cfg.Email.SMTPPassword,
+		FromEmail:     cfg.Email.FromEmail,
+		FromName:      cfg.Email.FromName,
+		TLSEnabled:    cfg.Email.TLSEnabled,
+		TemplatesPath: cfg.Email.TemplatesPath,
 	}
 
-	emailService := email.NewService(emailConfig)
+	emailService, err := email.NewService(emailConfig)
+	if err != nil {
+		log.Fatalf("创建邮件服务失败: %v", err)
+	}
 
 	// 验证邮件配置
 	if err := emailService.ValidateConfig(); err != nil {
@@ -38,7 +40,7 @@ func main() {
 	}
 
 	// 创建Worker管理器
-	workerManager := worker.NewManager(cfg.Redis.Addr, emailService)
+	workerManager := worker.NewManager(emailService)
 
 	// 启动Worker服务器
 	go func() {

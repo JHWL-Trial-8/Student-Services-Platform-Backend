@@ -13,13 +13,14 @@ import (
 
 // Config 邮件服务配置
 type Config struct {
-	SMTPHost     string `mapstructure:"smtp_host"`     // SMTP服务器地址
-	SMTPPort     int    `mapstructure:"smtp_port"`     // SMTP端口
-	SMTPUsername string `mapstructure:"smtp_username"` // SMTP用户名
-	SMTPPassword string `mapstructure:"smtp_password"` // SMTP密码
-	FromEmail    string `mapstructure:"from_email"`    // 发件人邮箱
-	FromName     string `mapstructure:"from_name"`     // 发件人姓名
-	TLSEnabled   bool   `mapstructure:"tls_enabled"`   // 是否启用TLS
+	SMTPHost      string `mapstructure:"smtp_host"`      // SMTP服务器地址
+	SMTPPort      int    `mapstructure:"smtp_port"`      // SMTP端口
+	SMTPUsername  string `mapstructure:"smtp_username"`  // SMTP用户名
+	SMTPPassword  string `mapstructure:"smtp_password"`  // SMTP密码
+	FromEmail     string `mapstructure:"from_email"`     // 发件人邮箱
+	FromName      string `mapstructure:"from_name"`      // 发件人姓名
+	TLSEnabled    bool   `mapstructure:"tls_enabled"`    // 是否启用TLS
+	TemplatesPath string `mapstructure:"templates_path"` // 模板文件路径
 }
 
 // Service 邮件服务
@@ -30,21 +31,33 @@ type Service struct {
 }
 
 // NewService 创建邮件服务
-func NewService(config *Config) *Service {
+func NewService(config *Config) (*Service, error) {
+	// 创建模板引擎
+	templateEngine, err := NewTemplateEngine(config.TemplatesPath)
+	if err != nil {
+		return nil, fmt.Errorf("创建模板引擎失败: %w", err)
+	}
+
 	return &Service{
 		config:            config,
 		recipientResolver: NewDefaultRecipientResolver(config.FromEmail), // 传入发件人邮箱作为默认管理员邮箱
-		templateEngine:    NewTemplateEngine(),
-	}
+		templateEngine:    templateEngine,
+	}, nil
 }
 
 // NewServiceWithResolver 创建邮件服务（自定义收件人解析器）
-func NewServiceWithResolver(config *Config, resolver RecipientResolver) *Service {
+func NewServiceWithResolver(config *Config, resolver RecipientResolver) (*Service, error) {
+	// 创建模板引擎
+	templateEngine, err := NewTemplateEngine(config.TemplatesPath)
+	if err != nil {
+		return nil, fmt.Errorf("创建模板引擎失败: %w", err)
+	}
+
 	return &Service{
 		config:            config,
 		recipientResolver: resolver,
-		templateEngine:    NewTemplateEngine(),
-	}
+		templateEngine:    templateEngine,
+	}, nil
 }
 
 // SendEmail 发送邮件
@@ -148,30 +161,14 @@ func (s *Service) sendMailSSL(addr, username, password, from string, to []string
 }
 
 // SendTemplateEmail 发送模板邮件（符合worker接口要求）
-func (s *Service) SendTemplateEmail(ctx context.Context, task *worker.EmailTask) error {
-	// 渲染模板
-	templateBody, err := s.templateEngine.Render(string(task.Type), task.Context)
-	if err != nil {
-		return fmt.Errorf("模板渲染失败: %w", err)
-	}
-
-	// 创建新的任务，使用渲染后的内容
-	templateTask := *task // 复制任务
-	templateTask.Body = templateBody
-
-	// 发送邮件
-	return s.SendEmail(ctx, &templateTask)
-}
-
-// SendTemplateEmailWithContext 发送模板邮件（使用上下文参数）
-func (s *Service) SendTemplateEmailWithContext(ctx context.Context, emailType string, context map[string]interface{}) error {
+func (s *Service) SendTemplateEmail(ctx context.Context, emailType string, context map[string]interface{}) error {
 	// 渲染模板
 	templateBody, err := s.templateEngine.Render(emailType, context)
 	if err != nil {
 		return fmt.Errorf("模板渲染失败: %w", err)
 	}
 
-	// 从上下文中获取收件人信息
+	// 解析收件人
 	recipients, err := s.recipientResolver.ResolveRecipients(ctx, worker.EmailType(emailType), context)
 	if err != nil {
 		return fmt.Errorf("解析收件人失败: %w", err)

@@ -8,25 +8,25 @@ import (
 	"github.com/gin-gonic/gin"
 
 	// API Handlers
+	adminstatsapi "student-services-platform-backend/app/api/adminstats"
 	adminuserapi "student-services-platform-backend/app/api/adminuser"
 	authapi "student-services-platform-backend/app/api/auth"
+	cannedapi "student-services-platform-backend/app/api/canned"
 	imagesapi "student-services-platform-backend/app/api/images"
 	ticketapi "student-services-platform-backend/app/api/ticket"
 	userapi "student-services-platform-backend/app/api/user"
-	adminstatsapi "student-services-platform-backend/app/api/adminstats"
-	cannedapi "student-services-platform-backend/app/api/canned"
 
 	// Router
 	"student-services-platform-backend/app/router"
-	
+
 	// Services
+	adminstatssvc "student-services-platform-backend/app/services/adminstats"
 	adminusersvc "student-services-platform-backend/app/services/adminuser"
 	authsvc "student-services-platform-backend/app/services/auth"
+	cannedsvc "student-services-platform-backend/app/services/canned"
 	imagessvc "student-services-platform-backend/app/services/images"
 	ticketsvc "student-services-platform-backend/app/services/ticket"
 	usersvc "student-services-platform-backend/app/services/user"
-	adminstatssvc "student-services-platform-backend/app/services/adminstats"
-	cannedsvc "student-services-platform-backend/app/services/canned"
 
 	"student-services-platform-backend/internal/config"
 	dbpkg "student-services-platform-backend/internal/db"
@@ -58,17 +58,20 @@ func main() {
 	if cfg.Email.SMTPHost != "" {
 		// 配置了邮件服务，创建邮件通知器
 		emailConfig := &email.Config{
-			SMTPHost:     cfg.Email.SMTPHost,
-			SMTPPort:     cfg.Email.SMTPPort,
-			SMTPUsername: cfg.Email.SMTPUsername,
-			SMTPPassword: cfg.Email.SMTPPassword,
-			FromEmail:    cfg.Email.FromEmail,
-			FromName:     cfg.Email.FromName,
-			TLSEnabled:   cfg.Email.TLSEnabled,
+			SMTPHost:      cfg.Email.SMTPHost,
+			SMTPPort:      cfg.Email.SMTPPort,
+			SMTPUsername:  cfg.Email.SMTPUsername,
+			SMTPPassword:  cfg.Email.SMTPPassword,
+			FromEmail:     cfg.Email.FromEmail,
+			FromName:      cfg.Email.FromName,
+			TLSEnabled:    cfg.Email.TLSEnabled,
+			TemplatesPath: cfg.Email.TemplatesPath,
 		}
 
-		emailService := email.NewService(emailConfig)
-		if err := emailService.ValidateConfig(); err != nil {
+		emailService, err := email.NewService(emailConfig)
+		if err != nil {
+			log.Printf("创建邮件服务失败，禁用邮件通知: %v", err)
+		} else if err := emailService.ValidateConfig(); err != nil {
 			log.Printf("邮件配置无效，禁用邮件通知: %v", err)
 		} else {
 			emailNotifier = email.NewNotifier(emailService)
@@ -101,7 +104,7 @@ func main() {
 	adminStatsH := adminstatsapi.New(adminstatssvc.NewService(database))
 	cannedH := cannedapi.New(cannedsvc.NewService(database))
 	adminUserH := adminuserapi.New(adminusersvc.NewService(database))
-	
+
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery(), httpserver.CORS(cfg.CORS))
 
