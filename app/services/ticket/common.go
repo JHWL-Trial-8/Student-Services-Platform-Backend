@@ -12,8 +12,9 @@ import (
 // EmailNotifier 邮件通知接口
 type EmailNotifier interface {
 	NotifyTicketCreated(ctx context.Context, ticketID uint, title, category, creatorName string) error
-	NotifyTicketResolved(ctx context.Context, ticketID uint, title, resolution, handlerName, creatorEmail, handlerEmail string) error
 	NotifyTicketClaimed(ctx context.Context, ticketID uint, title, handlerName, creatorEmail string) error
+	NotifyTicketResolved(ctx context.Context, ticketID uint, title, resolution, handlerName, creatorEmail, handlerEmail string) error
+	NotifyTicketClosed(ctx context.Context, ticketID uint, title, handlerName, creatorEmail, handlerEmail string) error
 	NotifyNewMessage(ctx context.Context, ticketID uint, senderName, message, creatorEmail, handlerEmail string) error
 }
 

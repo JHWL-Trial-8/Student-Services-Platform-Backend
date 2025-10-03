@@ -214,27 +214,65 @@ func (s *Service) ResolveTicket(ctx context.Context, adminUID, ticketID uint) er
 
 // CloseTicket 关闭工单 (负责人或超管)
 func (s *Service) CloseTicket(ctx context.Context, adminUID, ticketID uint) error {
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var u dbpkg.User
-		if err := tx.Select("role").First(&u, adminUID).Error; err != nil {
-			return &ErrForbidden{Reason: "user not found"}
-		}
-		var t dbpkg.Ticket
-		if err := tx.First(&t, ticketID).Error; err != nil {
-			return &ErrNotFound{Resource: "ticket"}
-		}
-		if !isSuperAdmin(u.Role) && (t.AssignedAdminID == nil || *t.AssignedAdminID != adminUID) {
-			return &ErrForbidden{Reason: "只有负责人或超级管理员可以关闭工单"}
-		}
-		if t.Status != dbpkg.TicketStatusResolved {
-			return &ErrInvalidState{Message: fmt.Sprintf("仅 'RESOLVED' 状态的工单可关闭, 当前为 '%s'", t.Status)}
-		}
-		if err := tx.Model(&t).Update("status", dbpkg.TicketStatusClosed).Error; err != nil {
-			return err
-		}
-		diff := map[string]interface{}{"status_to": "CLOSED"}
-		return s.audit(ctx, tx, adminUID, "ticket.close", "TICKET", ticketID, diff)
-	})
+    // 先执行事务
+    err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+        var u dbpkg.User
+        if err := tx.Select("role").First(&u, adminUID).Error; err != nil {
+            return &ErrForbidden{Reason: "user not found"}
+        }
+        var t dbpkg.Ticket
+        if err := tx.First(&t, ticketID).Error; err != nil {
+            return &ErrNotFound{Resource: "ticket"}
+        }
+        if !isSuperAdmin(u.Role) && (t.AssignedAdminID == nil || *t.AssignedAdminID != adminUID) {
+            return &ErrForbidden{Reason: "只有负责人或超级管理员可以关闭工单"}
+        }
+        if t.Status != dbpkg.TicketStatusResolved {
+            return &ErrInvalidState{Message: fmt.Sprintf("仅 'RESOLVED' 状态的工单可关闭, 当前为 '%s'", t.Status)}
+        }
+        if err := tx.Model(&t).Update("status", dbpkg.TicketStatusClosed).Error; err != nil {
+            return err
+        }
+        diff := map[string]interface{}{"status_to": "CLOSED"}
+        return s.audit(ctx, tx, adminUID, "ticket.close", "TICKET", ticketID, diff)
+    })
+    
+    // 事务失败，直接返回错误
+    if err != nil {
+        return err
+    }
+
+    // 事务成功后再异步发送邮件通知（如果配置了 notifier）
+    if s.notifier != nil {
+        go func(ticketID, adminUID uint) {
+            // 获取工单和用户信息用于邮件
+            var ticket dbpkg.Ticket
+            var creator dbpkg.User
+            var handler dbpkg.User
+
+            if err := s.db.First(&ticket, ticketID).Error; err != nil {
+                return // 静默失败，不影响主流程
+            }
+            if err := s.db.First(&creator, ticket.UserID).Error; err != nil {
+                return
+            }
+            if err := s.db.First(&handler, adminUID).Error; err != nil {
+                return
+            }
+
+            // 发送邮件通知
+            s.notifier.NotifyTicketClosed(
+                context.Background(),
+                ticketID,
+                ticket.Title,
+                handler.Name,
+                creator.Email,
+                handler.Email,
+            )
+        }(ticketID, adminUID)
+    }
+
+    return nil
 }
 
 // SpamFlag 管理员标记垃圾（进入待审）

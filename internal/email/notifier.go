@@ -77,6 +77,30 @@ func (n *Notifier) NotifyTicketResolved(ctx context.Context, ticketID uint, titl
 	)
 }
 
+// NotifyTicketClosed 通知工单已关闭
+func (n *Notifier) NotifyTicketClosed(ctx context.Context, ticketID uint, title, handlerName, creatorEmail, handlerEmail string) error {
+	// 使用模板发送邮件
+	emailContext := map[string]interface{}{
+		"ticket_id":     ticketID,
+		"title":         title,
+		"admin_name":    handlerName,
+		"student_name":  "学生", // 默认值，实际应用中应从数据库获取
+		"closed_at":     time.Now().Format("2006-01-02 15:04:05"),
+		"creator_email": creatorEmail,
+		"handler_email": handlerEmail,
+		"ticket_url":    fmt.Sprintf("/tickets/%d", ticketID), // 前端路由
+	}
+
+	// 使用动态收件人解析器
+	return n.emailService.SendEmailWithDynamicRecipients(
+		ctx,
+		worker.EmailTypeTicketClosed,
+		fmt.Sprintf("工单已关闭 - %s", title),
+		"", // 空的body，使用模板
+		emailContext,
+	)
+}
+
 // NotifyNewMessage 通知收到新消息
 func (n *Notifier) NotifyNewMessage(ctx context.Context, ticketID uint, senderName, message, creatorEmail, handlerEmail string) error {
 	subject := fmt.Sprintf("工单新消息 - #%d", ticketID)
