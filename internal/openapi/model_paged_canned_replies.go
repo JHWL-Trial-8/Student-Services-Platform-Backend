@@ -11,7 +11,7 @@ package openapi
 
 type PagedCannedReplies struct {
 
-	Items []CannedReply `json:"items,omitempty"`
+	Items []CannedReply `json:"items"`
 
 	Page int32 `json:"page,omitempty"`
 

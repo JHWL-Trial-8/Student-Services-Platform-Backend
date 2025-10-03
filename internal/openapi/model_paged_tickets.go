@@ -11,7 +11,7 @@ package openapi
 
 type PagedTickets struct {
 
-	Items []Ticket `json:"items,omitempty"`
+	Items []Ticket `json:"items"`
 
 	Page int32 `json:"page,omitempty"`
 

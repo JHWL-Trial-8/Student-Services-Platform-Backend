@@ -11,7 +11,7 @@ package openapi
 
 type PagedUsers struct {
 
-	Items []User `json:"items,omitempty"`
+	Items []User `json:"items"`
 
 	Page int32 `json:"page,omitempty"`
 
