@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>新消息通知</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            color: #007bff;
+            margin-bottom: 20px;
+        }
+        .info-box {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .message-box {
+            background: #fff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            display: inline-block;
+        }
+        .footer {
+            margin: 30px 0;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="header">💬 新消息通知</h2>
+        <p>{{.recipient_name}}，</p>
+        <p>您的工单收到了新的回复：</p>
+        
+        <div class="info-box">
+            <p><strong>工单编号：</strong>{{.ticket_id}}</p>
+            <p><strong>标题：</strong>{{.title}}</p>
+            <p><strong>回复人：</strong>{{.sender_name}}</p>
+            <p><strong>回复时间：</strong>{{.message_time}}</p>
+        </div>
+        
+        <p><strong>消息内容：</strong></p>
+        <div class="message-box">
+            {{.message_body}}
+        </div>
+        
+        <p>
+            <a href="{{.ticket_url}}" class="btn">查看并回复</a>
+        </p>
+        
+        <div class="footer">
+            此邮件由学生服务平台自动发送，请勿直接回复。
+        </div>
+    </div>
+</body>
+</html>

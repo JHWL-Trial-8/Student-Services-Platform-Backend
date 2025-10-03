@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>工单处理通知</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+        .info-box {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .btn {
+            background: #28a745;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            display: inline-block;
+        }
+        .footer {
+            margin: 30px 0;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="header">✅ 工单已被接单</h2>
+        <p>{{.student_name}} 同学，</p>
+        <p>您的工单已被管理员接单处理：</p>
+        
+        <div class="info-box">
+            <p><strong>工单编号：</strong>{{.ticket_id}}</p>
+            <p><strong>标题：</strong>{{.title}}</p>
+            <p><strong>处理人员：</strong>{{.admin_name}}</p>
+            <p><strong>接单时间：</strong>{{.claimed_at}}</p>
+        </div>
+        
+        <p>管理员将尽快为您处理工单，如有疑问可通过工单消息功能进行沟通。</p>
+        
+        <p>
+            <a href="{{.ticket_url}}" class="btn">查看工单详情</a>
+        </p>
+        
+        <div class="footer">
+            此邮件由学生服务平台自动发送，请勿直接回复。
+        </div>
+    </div>
+</body>
+</html>
