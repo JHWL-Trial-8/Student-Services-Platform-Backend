@@ -38,76 +38,76 @@ func (s *Service) audit(ctx context.Context, tx *gorm.DB, actorID uint, action, 
 
 // ClaimTicket 管理员接单（原子 CAS）
 func (s *Service) ClaimTicket(ctx context.Context, adminUID, ticketID uint) error {
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		now := time.Now().UTC().Truncate(time.Microsecond)
-		result := tx.Model(&dbpkg.Ticket{}).
-			Where("id = ? AND status = ?", ticketID, dbpkg.TicketStatusNew).
-			Updates(map[string]interface{}{
-				"assigned_admin_id": adminUID,
-				"status":            dbpkg.TicketStatusClaimed,
-				"claimed_at":        &now,
-				"updated_at":        now,
-			})
-		if result.Error != nil {
-			return result.Error
-		}
-		if result.RowsAffected == 0 {
-			var cur dbpkg.Ticket
-			if err := tx.First(&cur, ticketID).Error; err != nil {
-				return &ErrNotFound{Resource: "ticket"}
-			}
-			// Add logging to debug the issue
-			fmt.Printf("DEBUG: Ticket %d current status: %s\n", ticketID, cur.Status)
-			// If the ticket is already claimed, return a conflict error
-			if cur.Status == dbpkg.TicketStatusClaimed {
-				fmt.Printf("DEBUG: Ticket %d is already claimed, returning ErrConflict\n", ticketID)
-				return &ErrConflict{Message: "工单已被他人认领"}
-			}
-			// For any other non-NEW status, return invalid state error
-			if cur.Status != dbpkg.TicketStatusNew {
-				fmt.Printf("DEBUG: Returning ErrInvalidState for ticket %d with status %s\n", ticketID, cur.Status)
-				return &ErrInvalidState{Message: fmt.Sprintf("仅 'NEW' 状态的工单可被认领, 当前为 '%s'", cur.Status)}
-			}
-			// This should theoretically never be reached
-			fmt.Printf("DEBUG: Unexpected case for ticket %d, returning ErrConflict\n", ticketID)
-			return &ErrConflict{Message: "工单已被他人认领"}
-		}
-		diff := map[string]interface{}{"status_to": "CLAIMED", "assigned_admin_id": adminUID}
-		return s.audit(ctx, tx, adminUID, "ticket.claim", "TICKET", ticketID, diff)
-	})
+    // 先执行事务，拿到错误再决定后续动作
+    err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+        now := time.Now().UTC().Truncate(time.Microsecond)
+        result := tx.Model(&dbpkg.Ticket{}).
+            Where("id = ? AND status = ?", ticketID, dbpkg.TicketStatusNew).
+            Updates(map[string]interface{}{
+                "assigned_admin_id": adminUID,
+                "status":            dbpkg.TicketStatusClaimed,
+                "claimed_at":        &now,
+                "updated_at":        now,
+            })
+        if result.Error != nil {
+            return result.Error
+        }
+        if result.RowsAffected == 0 {
+            var cur dbpkg.Ticket
+            if err := tx.First(&cur, ticketID).Error; err != nil {
+                return &ErrNotFound{Resource: "ticket"}
+            }
+            // 已被认领
+            if cur.Status == dbpkg.TicketStatusClaimed {
+                return &ErrConflict{Message: "工单已被他人认领"}
+            }
+            // 非 NEW 状态
+            if cur.Status != dbpkg.TicketStatusNew {
+                return &ErrInvalidState{Message: fmt.Sprintf("仅 'NEW' 状态的工单可被认领, 当前为 '%s'", cur.Status)}
+            }
+            // 理论上到不了这里
+            return &ErrConflict{Message: "工单已被他人认领"}
+        }
 
-	// 发送邮件通知（如果配置了notifier）
-	if s.notifier != nil {
-		go func() {
-			// 获取工单和用户信息用于邮件
-			var ticket dbpkg.Ticket
-			var creator dbpkg.User
-			var handler dbpkg.User
+        diff := map[string]interface{}{"status_to": "CLAIMED", "assigned_admin_id": adminUID}
+        return s.audit(ctx, tx, adminUID, "ticket.claim", "TICKET", ticketID, diff)
+    })
 
-			if err := s.db.First(&ticket, ticketID).Error; err != nil {
-				return // 静默失败，不影响主流程
-			}
+    // 事务失败，直接返回错误
+    if err != nil {
+        return err
+    }
 
-			if err := s.db.First(&creator, ticket.UserID).Error; err != nil {
-				return
-			}
+    // 事务成功后再异步发送邮件通知（如果配置了 notifier）
+    if s.notifier != nil {
+        go func(ticketID, adminUID uint) {
+            // 获取工单和用户信息用于邮件
+            var ticket dbpkg.Ticket
+            var creator dbpkg.User
+            var handler dbpkg.User
 
-			if err := s.db.First(&handler, adminUID).Error; err != nil {
-				return
-			}
+            if err := s.db.First(&ticket, ticketID).Error; err != nil {
+                return // 静默失败，不影响主流程
+            }
+            if err := s.db.First(&creator, ticket.UserID).Error; err != nil {
+                return
+            }
+            if err := s.db.First(&handler, adminUID).Error; err != nil {
+                return
+            }
 
-			// 发送邮件通知
-			s.notifier.NotifyTicketClaimed(
-				context.Background(),
-				ticketID,
-				ticket.Title,
-				handler.Name,
-				creator.Email,
-			)
-		}()
-	}
+            // 发送邮件通知
+            s.notifier.NotifyTicketClaimed(
+                context.Background(),
+                ticketID,
+                ticket.Title,
+                handler.Name,
+                creator.Email,
+            )
+        }(ticketID, adminUID)
+    }
 
-	return nil
+    return nil
 }
 
 // UnclaimTicket 管理员撤销接单（原子 CAS）
