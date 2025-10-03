@@ -85,12 +85,19 @@ func (s *Service) Create(currentUID uint, in openapi.CannedReplyCreate) (*openap
 	if err := s.db.Create(cr).Error; err != nil {
 		return nil, err
 	}
+	
+	// 重新从数据库查询记录，确保获取到数据库中的时间戳
+	var freshCR dbpkg.CannedReply
+	if err := s.db.First(&freshCR, cr.ID).Error; err != nil {
+		return nil, err
+	}
+	
 	out := &openapi.CannedReply{
-		Id:          int32(cr.ID),
-		AdminUserId: int32(cr.AdminUserID),
-		Title:       cr.Title,
-		Body:        cr.Body,
-		CreatedAt:   cr.CreatedAt,
+		Id:          int32(freshCR.ID),
+		AdminUserId: int32(freshCR.AdminUserID),
+		Title:       freshCR.Title,
+		Body:        freshCR.Body,
+		CreatedAt:   freshCR.CreatedAt,
 	}
 	return out, nil
 }
@@ -140,12 +147,19 @@ func (s *Service) Update(currentUID, id uint, in openapi.CannedReplyUpdate) (*op
 	if err := s.db.Save(&cr).Error; err != nil {
 		return nil, err
 	}
+	
+	// 重新从数据库查询记录，确保获取到数据库中的时间戳
+	var freshCR dbpkg.CannedReply
+	if err := s.db.First(&freshCR, cr.ID).Error; err != nil {
+		return nil, err
+	}
+	
 	out := &openapi.CannedReply{
-		Id:          int32(cr.ID),
-		AdminUserId: int32(cr.AdminUserID),
-		Title:       cr.Title,
-		Body:        cr.Body,
-		CreatedAt:   cr.CreatedAt,
+		Id:          int32(freshCR.ID),
+		AdminUserId: int32(freshCR.AdminUserID),
+		Title:       freshCR.Title,
+		Body:        freshCR.Body,
+		CreatedAt:   freshCR.CreatedAt,
 	}
 	return out, nil
 }
