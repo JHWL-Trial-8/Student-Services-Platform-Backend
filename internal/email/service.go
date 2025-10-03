@@ -181,7 +181,7 @@ func (s *Service) SendTemplateEmail(ctx context.Context, emailType string, conte
 	// 创建邮件任务
 	task := &worker.EmailTask{
 		To:       recipients,
-		Subject:  fmt.Sprintf("工单通知 - %s", s.getSubjectFromContext(context)),
+		Subject:  s.getSubjectFromContext(context),
 		Body:     templateBody,
 		Type:     worker.EmailType(emailType),
 		Priority: worker.EmailPriorityNormal,

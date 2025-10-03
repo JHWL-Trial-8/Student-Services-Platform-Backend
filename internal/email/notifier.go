@@ -43,7 +43,7 @@ func (n *Notifier) NotifyTicketClaimed(ctx context.Context, ticketID uint, title
 		"ticket_id":     ticketID,
 		"title":         title,
 		"admin_name":    handlerName,
-		"student_name":  "", // 这里需要从数据库查询学生姓名
+		"student_name":  "学生", // 默认值，实际应用中应从数据库获取
 		"claimed_at":    time.Now().Format("2006-01-02 15:04:05"),
 		"student_email": creatorEmail,
 		"ticket_url":    fmt.Sprintf("/tickets/%d", ticketID), // 前端路由
@@ -60,7 +60,7 @@ func (n *Notifier) NotifyTicketResolved(ctx context.Context, ticketID uint, titl
 		"title":         title,
 		"resolution":    resolution,
 		"admin_name":    handlerName,
-		"student_name":  "", // 这里需要从数据库查询学生姓名
+		"student_name":  "学生", // 默认值，实际应用中应从数据库获取
 		"resolved_at":   time.Now().Format("2006-01-02 15:04:05"),
 		"creator_email": creatorEmail,
 		"handler_email": handlerEmail,
@@ -83,10 +83,10 @@ func (n *Notifier) NotifyNewMessage(ctx context.Context, ticketID uint, senderNa
 
 	emailContext := map[string]interface{}{
 		"ticket_id":      ticketID,
-		"title":          "", // 这里需要从数据库查询工单标题
+		"title":          "工单标题", // 默认值，实际应用中应从数据库获取
 		"sender_name":    senderName,
 		"message_body":   message,
-		"recipient_name": "", // 这里需要确定收件人姓名
+		"recipient_name": "用户", // 默认值，实际应用中应确定收件人姓名
 		"message_time":   time.Now().Format("2006-01-02 15:04:05"),
 		"creator_email":  creatorEmail,
 		"handler_email":  handlerEmail,
