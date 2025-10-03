@@ -40,6 +40,7 @@ email:
   from_email: "your-email@qq.com"       # 发件人邮箱（与smtp_username相同）
   from_name: "学生服务平台"               # 发件人姓名
   tls_enabled: true                      # 启用TLS加密
+  templates_path: "./templates/email"    # 邮件模板文件夹路径
 
 # Redis配置（用于异步任务队列）
 redis:

@@ -37,17 +37,20 @@ func main() {
 	if cfg.Email.SMTPHost != "" {
 		// 配置了邮件服务，创建邮件通知器
 		emailConfig := &email.Config{
-			SMTPHost:     cfg.Email.SMTPHost,
-			SMTPPort:     cfg.Email.SMTPPort,
-			SMTPUsername: cfg.Email.SMTPUsername,
-			SMTPPassword: cfg.Email.SMTPPassword,
-			FromEmail:    cfg.Email.FromEmail,
-			FromName:     cfg.Email.FromName,
-			TLSEnabled:   cfg.Email.TLSEnabled,
+			SMTPHost:      cfg.Email.SMTPHost,
+			SMTPPort:      cfg.Email.SMTPPort,
+			SMTPUsername:  cfg.Email.SMTPUsername,
+			SMTPPassword:  cfg.Email.SMTPPassword,
+			FromEmail:     cfg.Email.FromEmail,
+			FromName:      cfg.Email.FromName,
+			TLSEnabled:    cfg.Email.TLSEnabled,
+			TemplatesPath: cfg.Email.TemplatesPath,
 		}
 
-		emailService := email.NewService(emailConfig)
-		if err := emailService.ValidateConfig(); err != nil {
+		emailService, err := email.NewService(emailConfig)
+		if err != nil {
+			log.Printf("创建邮件服务失败，禁用邮件通知: %v", err)
+		} else if err := emailService.ValidateConfig(); err != nil {
 			log.Printf("邮件配置无效，禁用邮件通知: %v", err)
 		} else {
 			emailNotifier = email.NewNotifier(emailService)

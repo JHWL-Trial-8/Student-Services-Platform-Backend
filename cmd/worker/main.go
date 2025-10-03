@@ -21,16 +21,20 @@ func main() {
 
 	// 创建邮件服务
 	emailConfig := &email.Config{
-		SMTPHost:     cfg.Email.SMTPHost,
-		SMTPPort:     cfg.Email.SMTPPort,
-		SMTPUsername: cfg.Email.SMTPUsername,
-		SMTPPassword: cfg.Email.SMTPPassword,
-		FromEmail:    cfg.Email.FromEmail,
-		FromName:     cfg.Email.FromName,
-		TLSEnabled:   cfg.Email.TLSEnabled,
+		SMTPHost:      cfg.Email.SMTPHost,
+		SMTPPort:      cfg.Email.SMTPPort,
+		SMTPUsername:  cfg.Email.SMTPUsername,
+		SMTPPassword:  cfg.Email.SMTPPassword,
+		FromEmail:     cfg.Email.FromEmail,
+		FromName:      cfg.Email.FromName,
+		TLSEnabled:    cfg.Email.TLSEnabled,
+		TemplatesPath: cfg.Email.TemplatesPath,
 	}
 
-	emailService := email.NewService(emailConfig)
+	emailService, err := email.NewService(emailConfig)
+	if err != nil {
+		log.Fatalf("创建邮件服务失败: %v", err)
+	}
 
 	// 验证邮件配置
 	if err := emailService.ValidateConfig(); err != nil {
