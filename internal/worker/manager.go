@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Manager 异步任务管理器
+// Manager 邮件任务管理器
 type Manager struct {
 	client       *Client
 	server       *Server
@@ -15,12 +15,10 @@ type Manager struct {
 }
 
 // NewManager 创建任务管理器
-func NewManager(redisAddr string, emailService EmailService) *Manager {
-	client := NewClient(redisAddr)
-	server := NewServer(redisAddr, 10) // 10个并发worker
-
-	// 注册任务处理器
-	server.RegisterHandlers(emailService)
+func NewManager(emailService EmailService) *Manager {
+	server := NewServer(emailService)
+	emailHandler := NewEmailHandler(emailService)
+	client := NewClient(emailHandler)
 
 	return &Manager{
 		client:       client,
@@ -36,7 +34,7 @@ func (m *Manager) GetClient() *Client {
 
 // StartServer 启动任务服务器
 func (m *Manager) StartServer() error {
-	log.Println("启动异步任务处理服务器...")
+	log.Println("启动邮件任务处理服务器...")
 	return m.server.Start()
 }
 
@@ -47,7 +45,7 @@ func (m *Manager) StopServer() {
 
 // Shutdown 关闭
 func (m *Manager) Shutdown() {
-	log.Println("关闭异步任务管理器...")
+	log.Println("关闭邮件任务管理器...")
 	m.server.Shutdown()
 	if err := m.client.Close(); err != nil {
 		log.Printf("关闭任务客户端失败: %v", err)
@@ -131,5 +129,6 @@ func (m *Manager) SendTicketResolvedNotification(ctx context.Context,
 // getTicketURL 生成工单链接
 func getTicketURL(ticketID uint) string {
 	// 这里应该从配置中获取前端地址
-	return fmt.Sprintf("https://your-frontend-domain.com/tickets/%d", ticketID)
+	// 暂时使用相对路径，由前端自行拼接完整URL
+	return fmt.Sprintf("/tickets/%d", ticketID)
 }

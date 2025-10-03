@@ -1,6 +1,8 @@
 package worker
 
-import "time"
+import (
+	"time"
+)
 
 // 任务类型常量
 const (

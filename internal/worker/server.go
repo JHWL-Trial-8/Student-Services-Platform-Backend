@@ -2,69 +2,43 @@ package worker
 
 import (
 	"log"
-	"time"
-
-	"github.com/hibiken/asynq"
 )
 
-// Server 异步任务服务器
+// Server 邮件任务服务器
 type Server struct {
-	server *asynq.Server
-	mux    *asynq.ServeMux
+	emailHandler *EmailHandler
 }
 
 // NewServer 创建新的任务服务器
-func NewServer(redisAddr string, concurrency int) *Server {
-	server := asynq.NewServer(
-		asynq.RedisClientOpt{Addr: redisAddr},
-		asynq.Config{
-			Concurrency: concurrency,
-			Queues: map[string]int{
-				"critical": 6, // 紧急队列
-				"default":  3, // 默认队列
-				"low":      1, // 低优先级队列
-			},
-			// 错误重试策略 - 不重试，一次失败直接放弃
-			RetryDelayFunc: func(n int, err error, task *asynq.Task) time.Duration {
-				// 不重试，直接失败
-				log.Printf("任务 %s 失败，不重试：%v", task.Type(), err)
-				return 0 // 返回0表示不重试
-			},
-			// 日志配置
-			Logger: nil, // 使用 asynq 默认日志器
-		},
-	)
-
-	mux := asynq.NewServeMux()
+func NewServer(emailService EmailService) *Server {
+	emailHandler := NewEmailHandler(emailService)
 
 	return &Server{
-		server: server,
-		mux:    mux,
+		emailHandler: emailHandler,
 	}
 }
 
 // RegisterHandlers 注册任务处理器
 func (s *Server) RegisterHandlers(emailService EmailService) {
-	emailHandler := NewEmailHandler(emailService)
-
-	// 注册邮件发送任务处理器
-	s.mux.HandleFunc(TypeEmailNotification, emailHandler.HandleEmailTask)
+	// 在同步模式下，不需要注册处理器
+	// 处理器已经在创建时设置
 }
 
 // Start 启动任务服务器
 func (s *Server) Start() error {
-	log.Println("Worker server starting...")
-	return s.server.Start(s.mux)
+	log.Println("邮件任务服务器已启动（同步模式）")
+	// 在同步模式下，不需要启动服务器
+	return nil
 }
 
 // Stop 停止任务服务器
 func (s *Server) Stop() {
-	log.Println("Worker server stopping...")
-	s.server.Stop()
+	log.Println("邮件任务服务器已停止")
+	// 在同步模式下，不需要停止服务器
 }
 
 // Shutdown 优雅关闭任务服务器
 func (s *Server) Shutdown() {
-	log.Println("Worker server shutting down...")
-	s.server.Shutdown()
+	log.Println("邮件任务服务器已关闭")
+	// 在同步模式下，不需要关闭服务器
 }

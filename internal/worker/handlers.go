@@ -2,18 +2,15 @@ package worker
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
-
-	"github.com/hibiken/asynq"
 )
 
 // EmailService 邮件服务接口
 type EmailService interface {
 	SendEmail(ctx context.Context, task *EmailTask) error
-	SendTemplateEmail(ctx context.Context, task *EmailTask) error
+	SendTemplateEmail(ctx context.Context, emailType string, context map[string]interface{}) error
 }
 
 // EmailHandler 邮件任务处理器
@@ -29,21 +26,16 @@ func NewEmailHandler(emailService EmailService) *EmailHandler {
 }
 
 // HandleEmailTask 处理邮件发送任务
-func (h *EmailHandler) HandleEmailTask(ctx context.Context, t *asynq.Task) error {
-	var task EmailTask
-	if err := json.Unmarshal(t.Payload(), &task); err != nil {
-		return fmt.Errorf("反序列化邮件任务失败: %w", err)
-	}
-
+func (h *EmailHandler) HandleEmailTask(ctx context.Context, task *EmailTask) error {
 	log.Printf("处理邮件任务: type=%s, to=%v, subject=%s",
 		task.Type, task.To, task.Subject)
 
 	// 根据邮件类型选择处理方式
 	var err error
 	if h.needsTemplate(task.Type) {
-		err = h.emailService.SendTemplateEmail(ctx, &task)
+		err = h.emailService.SendTemplateEmail(ctx, string(task.Type), task.Context)
 	} else {
-		err = h.emailService.SendEmail(ctx, &task)
+		err = h.emailService.SendEmail(ctx, task)
 	}
 
 	if err != nil {
@@ -51,7 +43,7 @@ func (h *EmailHandler) HandleEmailTask(ctx context.Context, t *asynq.Task) error
 		// 对于某些类型的错误，不进行重试
 		if isNonRetryableError(err) {
 			log.Printf("不可重试的错误，放弃任务: %v", err)
-			return asynq.SkipRetry // 跳过重试，直接失败
+			return fmt.Errorf("不可重试的错误: %w", err)
 		}
 		return fmt.Errorf("邮件发送失败: %w", err)
 	}
