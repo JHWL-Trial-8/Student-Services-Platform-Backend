@@ -181,7 +181,7 @@ func (s *Service) SendTemplateEmail(ctx context.Context, emailType string, conte
 	// 创建邮件任务
 	task := &worker.EmailTask{
 		To:       recipients,
-		Subject:  fmt.Sprintf("工单通知 - %s", context["title"]),
+		Subject:  fmt.Sprintf("工单通知 - %s", s.getSubjectFromContext(context)),
 		Body:     templateBody,
 		Type:     worker.EmailType(emailType),
 		Priority: worker.EmailPriorityNormal,
@@ -190,6 +190,16 @@ func (s *Service) SendTemplateEmail(ctx context.Context, emailType string, conte
 
 	// 发送邮件
 	return s.SendEmail(ctx, task)
+}
+
+// getSubjectFromContext 从上下文中提取主题
+func (s *Service) getSubjectFromContext(context map[string]interface{}) string {
+	if title, ok := context["title"]; ok {
+		if titleStr, ok := title.(string); ok {
+			return titleStr
+		}
+	}
+	return "工单通知"
 }
 
 // SendEmailWithDynamicRecipients 发送邮件（动态确定收件人）

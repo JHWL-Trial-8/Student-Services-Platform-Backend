@@ -128,7 +128,7 @@ func (m *Manager) SendTicketResolvedNotification(ctx context.Context,
 
 // getTicketURL 生成工单链接
 func getTicketURL(ticketID uint) string {
-	// 这里应该从配置中获取前端地址
+	// TODO: 从配置中获取前端地址
 	// 暂时使用相对路径，由前端自行拼接完整URL
 	return fmt.Sprintf("/tickets/%d", ticketID)
 }
