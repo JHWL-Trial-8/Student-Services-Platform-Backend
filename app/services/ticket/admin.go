@@ -56,9 +56,20 @@ func (s *Service) ClaimTicket(ctx context.Context, adminUID, ticketID uint) erro
 			if err := tx.First(&cur, ticketID).Error; err != nil {
 				return &ErrNotFound{Resource: "ticket"}
 			}
+			// Add logging to debug the issue
+			fmt.Printf("DEBUG: Ticket %d current status: %s\n", ticketID, cur.Status)
+			// If the ticket is already claimed, return a conflict error
+			if cur.Status == dbpkg.TicketStatusClaimed {
+				fmt.Printf("DEBUG: Ticket %d is already claimed, returning ErrConflict\n", ticketID)
+				return &ErrConflict{Message: "工单已被他人认领"}
+			}
+			// For any other non-NEW status, return invalid state error
 			if cur.Status != dbpkg.TicketStatusNew {
+				fmt.Printf("DEBUG: Returning ErrInvalidState for ticket %d with status %s\n", ticketID, cur.Status)
 				return &ErrInvalidState{Message: fmt.Sprintf("仅 'NEW' 状态的工单可被认领, 当前为 '%s'", cur.Status)}
 			}
+			// This should theoretically never be reached
+			fmt.Printf("DEBUG: Unexpected case for ticket %d, returning ErrConflict\n", ticketID)
 			return &ErrConflict{Message: "工单已被他人认领"}
 		}
 		diff := map[string]interface{}{"status_to": "CLAIMED", "assigned_admin_id": adminUID}
