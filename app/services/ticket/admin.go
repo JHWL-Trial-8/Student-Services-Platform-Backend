@@ -210,6 +210,13 @@ func (s *Service) SpamReview(ctx context.Context, superAdminUID, ticketID uint, 
 			ticketTo = dbpkg.TicketStatusSpamRejected
 			spamStatus = "REJECTED"
 		}
+		
+		// 获取工单信息以获取学生ID
+		var ticket dbpkg.Ticket
+		if err := tx.First(&ticket, ticketID).Error; err != nil {
+			return &ErrNotFound{Resource: "ticket"}
+		}
+		
 		res := tx.Model(&dbpkg.Ticket{}).Where("id = ? AND status = ?", ticketID, dbpkg.TicketStatusSpamPending).Update("status", ticketTo)
 		if res.Error != nil {
 			return res.Error
@@ -222,6 +229,22 @@ func (s *Service) SpamReview(ctx context.Context, superAdminUID, ticketID uint, 
 			"status": spamStatus, "reviewed_by_super_admin_id": superAdminUID, "reviewed_at": &now}).Error; err != nil {
 			return err
 		}
+		
+		// 如果审核通过，发送自动回复消息
+		if act == "approve" {
+			autoMsg := "请您在提交反馈时确保内容的有效性和准确性，感谢您的理解和配合。如有异议，请重新反馈。"
+			msg := &dbpkg.TicketMessage{
+				TicketID:       ticket.ID,
+				SenderUserID:   superAdminUID, // 使用超级管理员ID作为发送者
+				Body:           autoMsg,
+				IsInternalNote: false, // 学生可见
+				CreatedAt:      now,
+			}
+			if err := tx.Create(msg).Error; err != nil {
+				return err
+			}
+		}
+		
 		diff := map[string]interface{}{"status_to": string(ticketTo), "review_action": act}
 		return s.audit(ctx, tx, superAdminUID, "ticket.spam_review", "TICKET", ticketID, diff)
 	})
