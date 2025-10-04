@@ -163,3 +163,66 @@ func (n *Notifier) NotifySystemMaintenance(ctx context.Context, title, descripti
 
 	return n.emailService.SendEmailWithDynamicRecipients(ctx, worker.EmailTypeSystemMaintenance, subject, "", emailContext)
 }
+
+// NotifyTicketUnclaimed 通知工单被撤销
+func (n *Notifier) NotifyTicketUnclaimed(ctx context.Context, ticketID uint, title, creatorEmail string) error {
+	subject := fmt.Sprintf("工单已被撤销 - %s", title)
+
+	emailContext := map[string]interface{}{
+		"ticket_id":     ticketID,
+		"title":         title,
+		"student_email": creatorEmail,
+		"unclaimed_at":  time.Now().Format("2006-01-02 15:04:05"),
+		"ticket_url":    fmt.Sprintf("/tickets/%d", ticketID),
+	}
+
+	return n.emailService.SendEmailWithDynamicRecipients(ctx, worker.EmailTypeTicketUnclaimed, subject, "", emailContext)
+}
+
+// NotifyTicketRated 通知工单被评价
+func (n *Notifier) NotifyTicketRated(ctx context.Context, ticketID uint, title, rating string, comments, handlerEmail string) error {
+	subject := fmt.Sprintf("工单已被评价 - %s", title)
+
+	emailContext := map[string]interface{}{
+		"ticket_id":     ticketID,
+		"title":         title,
+		"rating":        rating,
+		"comments":      comments,
+		"handler_email": handlerEmail,
+		"rated_at":      time.Now().Format("2006-01-02 15:04:05"),
+		"ticket_url":    fmt.Sprintf("/tickets/%d", ticketID),
+	}
+
+	return n.emailService.SendEmailWithDynamicRecipients(ctx, worker.EmailTypeTicketRated, subject, "", emailContext)
+}
+
+// NotifySpamFlagged 通知垃圾标记
+func (n *Notifier) NotifySpamFlagged(ctx context.Context, ticketID uint, title, reporterName string) error {
+	subject := fmt.Sprintf("工单被标记为垃圾 - %s", title)
+
+	emailContext := map[string]interface{}{
+		"ticket_id":    ticketID,
+		"title":        title,
+		"reporter_name": reporterName,
+		"flagged_at":   time.Now().Format("2006-01-02 15:04:05"),
+		"ticket_url":   fmt.Sprintf("/tickets/%d", ticketID),
+	}
+
+	return n.emailService.SendEmailWithDynamicRecipients(ctx, worker.EmailTypeSpamFlagged, subject, "", emailContext)
+}
+
+// NotifySpamReviewed 通知垃圾审核结果
+func (n *Notifier) NotifySpamReviewed(ctx context.Context, ticketID uint, title, creatorEmail, result string) error {
+	subject := fmt.Sprintf("垃圾审核结果 - %s", title)
+
+	emailContext := map[string]interface{}{
+		"ticket_id":     ticketID,
+		"title":         title,
+		"creator_email": creatorEmail,
+		"result":        result, // "已确认" 或 "误报"
+		"reviewed_at":   time.Now().Format("2006-01-02 15:04:05"),
+		"ticket_url":    fmt.Sprintf("/tickets/%d", ticketID),
+	}
+
+	return n.emailService.SendEmailWithDynamicRecipients(ctx, worker.EmailTypeSpamReviewed, subject, "", emailContext)
+}

@@ -1,13 +1,15 @@
 package ticket
 
 import (
+	"context"
+	"fmt"
 	"strings"
 	"time"
 
 	dbpkg "student-services-platform-backend/internal/db"
 	"student-services-platform-backend/internal/openapi"
 
-	"errors"
+	errors "errors"
 	"gorm.io/gorm"
 )
 
@@ -56,6 +58,36 @@ func (s *Service) RateTicket(currentUID, ticketID uint, stars int, comment strin
 	}
 	if err := s.db.Create(r).Error; err != nil {
 		return nil, err
+	}
+
+	// 异步发送邮件通知给管理员（如果配置了 notifier）
+	if s.notifier != nil {
+		go func(ticketID uint, stars int, comment string) {
+			// 获取工单和处理人的信息用于邮件
+			var ticket dbpkg.Ticket
+			var handler dbpkg.User
+
+			if err := s.db.First(&ticket, ticketID).Error; err != nil {
+				return // 静默失败，不影响主流程
+			}
+			
+			// 检查是否有关联的管理员
+			if ticket.AssignedAdminID != nil {
+				if err := s.db.First(&handler, *ticket.AssignedAdminID).Error; err != nil {
+					return
+				}
+
+				// 发送邮件通知
+				s.notifier.NotifyTicketRated(
+					context.Background(),
+					ticketID,
+					ticket.Title,
+					fmt.Sprintf("%d星", stars),
+					comment,
+					handler.Email,
+				)
+			}
+		}(ticketID, stars, comment)
 	}
 
 	return &openapi.Rating{

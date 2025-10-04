@@ -45,6 +45,14 @@ func (r *DefaultRecipientResolver) ResolveRecipients(ctx context.Context, emailT
 		return r.resolvePasswordResetRecipients(ctx, emailContext)
 	case worker.EmailTypeSystemMaintenance:
 		return r.resolveSystemMaintenanceRecipients(ctx, emailContext)
+	case worker.EmailTypeTicketUnclaimed:
+		return r.resolveTicketUnclaimedRecipients(ctx, emailContext)
+	case worker.EmailTypeTicketRated:
+		return r.resolveTicketRatedRecipients(ctx, emailContext)
+	case worker.EmailTypeSpamFlagged:
+		return r.resolveSpamFlaggedRecipients(ctx, emailContext)
+	case worker.EmailTypeSpamReviewed:
+		return r.resolveSpamReviewedRecipients(ctx, emailContext)
 	default:
 		return nil, fmt.Errorf("未知的邮件类型: %s", emailType)
 	}
@@ -128,4 +136,37 @@ func (r *DefaultRecipientResolver) resolvePasswordResetRecipients(ctx context.Co
 func (r *DefaultRecipientResolver) resolveSystemMaintenanceRecipients(ctx context.Context, emailContext map[string]interface{}) ([]string, error) {
 	// 系统维护统一通知管理员
 	return []string{r.defaultAdminEmail}, nil
+}
+
+// resolveTicketUnclaimedRecipients 工单被撤销时的收件人
+func (r *DefaultRecipientResolver) resolveTicketUnclaimedRecipients(ctx context.Context, emailContext map[string]interface{}) ([]string, error) {
+	// 通知工单创建者
+	if creatorEmail, ok := emailContext["creator_email"].(string); ok {
+		return []string{creatorEmail}, nil
+	}
+	return nil, fmt.Errorf("工单创建者邮箱信息缺失")
+}
+
+// resolveTicketRatedRecipients 工单被评价时的收件人
+func (r *DefaultRecipientResolver) resolveTicketRatedRecipients(ctx context.Context, emailContext map[string]interface{}) ([]string, error) {
+	// 通知处理该工单的管理员
+	if handlerEmail, ok := emailContext["handler_email"].(string); ok {
+		return []string{handlerEmail}, nil
+	}
+	return nil, fmt.Errorf("处理人员邮箱信息缺失")
+}
+
+// resolveSpamFlaggedRecipients 垃圾标记时的收件人
+func (r *DefaultRecipientResolver) resolveSpamFlaggedRecipients(ctx context.Context, emailContext map[string]interface{}) ([]string, error) {
+	// 通知管理员
+	return []string{r.defaultAdminEmail}, nil
+}
+
+// resolveSpamReviewedRecipients 垃圾审核结果时的收件人
+func (r *DefaultRecipientResolver) resolveSpamReviewedRecipients(ctx context.Context, emailContext map[string]interface{}) ([]string, error) {
+	// 通知工单创建者
+	if creatorEmail, ok := emailContext["creator_email"].(string); ok {
+		return []string{creatorEmail}, nil
+	}
+	return nil, fmt.Errorf("工单创建者邮箱信息缺失")
 }

@@ -16,6 +16,10 @@ type EmailNotifier interface {
 	NotifyTicketResolved(ctx context.Context, ticketID uint, title, resolution, handlerName, creatorEmail, handlerEmail string) error
 	NotifyTicketClosed(ctx context.Context, ticketID uint, title, handlerName, creatorEmail, handlerEmail string) error
 	NotifyNewMessage(ctx context.Context, ticketID uint, senderName, message, creatorEmail, handlerEmail string) error
+	NotifyTicketUnclaimed(ctx context.Context, ticketID uint, title, creatorEmail string) error
+	NotifyTicketRated(ctx context.Context, ticketID uint, title, rating string, comments, handlerEmail string) error
+	NotifySpamFlagged(ctx context.Context, ticketID uint, title, reporterName string) error
+	NotifySpamReviewed(ctx context.Context, ticketID uint, title, creatorEmail, result string) error
 }
 
 // Service 封装工单领域逻辑

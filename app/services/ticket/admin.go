@@ -112,7 +112,8 @@ func (s *Service) ClaimTicket(ctx context.Context, adminUID, ticketID uint) erro
 
 // UnclaimTicket 管理员撤销接单（原子 CAS）
 func (s *Service) UnclaimTicket(ctx context.Context, adminUID, ticketID uint) error {
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	// 先执行事务，拿到错误再决定后续动作
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		result := tx.Model(&dbpkg.Ticket{}).
 			Where("id = ? AND assigned_admin_id = ? AND status = ?", ticketID, adminUID, dbpkg.TicketStatusClaimed).
 			Updates(map[string]interface{}{
@@ -137,6 +138,37 @@ func (s *Service) UnclaimTicket(ctx context.Context, adminUID, ticketID uint) er
 		diff := map[string]interface{}{"status_to": "NEW", "unassigned_admin_id": adminUID}
 		return s.audit(ctx, tx, adminUID, "ticket.unclaim", "TICKET", ticketID, diff)
 	})
+
+	// 事务失败，直接返回错误
+	if err != nil {
+		return err
+	}
+
+	// 事务成功后再异步发送邮件通知（如果配置了 notifier）
+	if s.notifier != nil {
+		go func(ticketID uint) {
+			// 获取工单和用户信息用于邮件
+			var ticket dbpkg.Ticket
+			var creator dbpkg.User
+
+			if err := s.db.First(&ticket, ticketID).Error; err != nil {
+				return // 静默失败，不影响主流程
+			}
+			if err := s.db.First(&creator, ticket.UserID).Error; err != nil {
+				return
+			}
+
+			// 发送邮件通知
+			s.notifier.NotifyTicketUnclaimed(
+				context.Background(),
+				ticketID,
+				ticket.Title,
+				creator.Email,
+			)
+		}(ticketID)
+	}
+
+	return nil
 }
 
 // updateTicketStatusAsAdmin 通用的管理员状态更新函数
@@ -311,6 +343,31 @@ func (s *Service) SpamFlag(ctx context.Context, adminUID, ticketID uint, reason 
 	if err != nil {
 		return nil, err
 	}
+
+	// 异步发送邮件通知给超级管理员（如果配置了 notifier）
+	if s.notifier != nil {
+		go func(ticketID, adminUID uint, reason string) {
+			// 获取工单和标记人的信息
+			var ticket dbpkg.Ticket
+			var flagger dbpkg.User
+
+			if err := s.db.First(&ticket, ticketID).Error; err != nil {
+				return // 静默失败，不影响主流程
+			}
+			if err := s.db.First(&flagger, adminUID).Error; err != nil {
+				return
+			}
+
+			// 发送邮件通知
+			s.notifier.NotifySpamFlagged(
+				context.Background(),
+				ticketID,
+				ticket.Title,
+				flagger.Name,
+			)
+		}(ticketID, adminUID, reason)
+	}
+
 	return &openapi.SpamFlag{
 		TicketId: int32(sf.TicketID), FlaggedByAdminId: int32(sf.FlaggedByAdminID), Reason: sf.Reason, Status: sf.Status}, nil
 }
@@ -322,7 +379,14 @@ func (s *Service) SpamReview(ctx context.Context, superAdminUID, ticketID uint, 
 		return &ErrValidation{Message: "字段校验失败", Details: map[string]interface{}{"action": "必须为 'approve' 或 'reject'"}}
 	}
 
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	// 先获取工单信息以获取学生ID
+	var ticket dbpkg.Ticket
+	if err := s.db.First(&ticket, ticketID).Error; err != nil {
+		return &ErrNotFound{Resource: "ticket"}
+	}
+
+	// 执行事务
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var ticketTo dbpkg.TicketStatus
 		var spamStatus string
 		if act == "approve" {
@@ -331,12 +395,6 @@ func (s *Service) SpamReview(ctx context.Context, superAdminUID, ticketID uint, 
 		} else {
 			ticketTo = dbpkg.TicketStatusSpamRejected
 			spamStatus = "REJECTED"
-		}
-		
-		// 获取工单信息以获取学生ID
-		var ticket dbpkg.Ticket
-		if err := tx.First(&ticket, ticketID).Error; err != nil {
-			return &ErrNotFound{Resource: "ticket"}
 		}
 		
 		res := tx.Model(&dbpkg.Ticket{}).Where("id = ? AND status = ?", ticketID, dbpkg.TicketStatusSpamPending).Update("status", ticketTo)
@@ -370,6 +428,46 @@ func (s *Service) SpamReview(ctx context.Context, superAdminUID, ticketID uint, 
 		diff := map[string]interface{}{"status_to": string(ticketTo), "review_action": act}
 		return s.audit(ctx, tx, superAdminUID, "ticket.spam_review", "TICKET", ticketID, diff)
 	})
+
+	// 事务失败，直接返回错误
+	if err != nil {
+		return err
+	}
+
+	// 异步发送邮件通知给学生（如果配置了 notifier）
+	if s.notifier != nil {
+		go func(ticketID uint, action string) {
+			// 获取工单和学生信息
+			var ticket dbpkg.Ticket
+			var creator dbpkg.User
+			var result string
+
+			if err := s.db.First(&ticket, ticketID).Error; err != nil {
+				return // 静默失败，不影响主流程
+			}
+			if err := s.db.First(&creator, ticket.UserID).Error; err != nil {
+				return
+			}
+
+			// 确定审核结果文本
+			if action == "approve" {
+				result = "已确认"
+			} else {
+				result = "误报"
+			}
+
+			// 发送邮件通知
+			s.notifier.NotifySpamReviewed(
+				context.Background(),
+				ticketID,
+				ticket.Title,
+				creator.Email,
+				result,
+			)
+		}(ticketID, act)
+	}
+
+	return nil
 }
 
 // isSuperAdmin 检查用户是否为超级管理员
